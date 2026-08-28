@@ -1,0 +1,13 @@
+@echo off
+echo Starting Metroika Servers...
+
+echo Starting Backend API on port 8000...
+start cmd /k "cd backend && .\venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+echo Starting Frontend Server on port 3000...
+start cmd /k "cd frontend && ..\backend\venv\Scripts\python.exe -m http.server 3000"
+
+echo Servers are starting in new windows.
+echo Opening browser to http://localhost:3000...
+timeout /t 3 /nobreak > nul
+start http://localhost:3000

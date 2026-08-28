@@ -1,0 +1,47 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database
+*.db
+*.sqlite3
+backend/metroika.db
+metroika.db
+
+# User Uploads & Generated Reports
+backend/uploads/
+backend/reports/
+backend/downloads/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.swp
+*~
+.DS_Store
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

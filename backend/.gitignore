@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+metroika.db
+uploads/*
+!uploads/.gitkeep
+reports/*
+!reports/.gitkeep
+venv/
+.venv/
