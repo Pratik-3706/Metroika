@@ -15,10 +15,9 @@ def main():
     print("[*] Initializing OCR models (this will download them if they don't exist)...")
     # Initialize with the exact flags used in ocr.py to ensure the exact models are cached
     ocr = PaddleOCR(
-        use_angle_cls=True,
+        use_textline_orientation=True,
         use_doc_orientation_classify=True,
-        lang="en",
-        show_log=True
+        lang="en"
     )
     print("\n[+] Models downloaded and cached successfully!")
 

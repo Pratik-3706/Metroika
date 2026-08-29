@@ -24,7 +24,7 @@ try:
     
     # Initialize with orientation classification enabled to fix vertical text issues
     ocr_engine = PaddleOCR(
-        use_angle_cls=True,                  # Enables character rotation classification
+        use_textline_orientation=True,       # Enables character rotation classification
         use_doc_orientation_classify=True,   # Enables full document rotation classification
         use_doc_unwarping=False
     )
