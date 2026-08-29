@@ -121,6 +121,20 @@ def generate_report(
         leading=11,
         textColor=colors.HexColor("#4B5563"),
     )
+    table_cell_style = ParagraphStyle(
+        "TableCell",
+        parent=styles["Normal"],
+        fontSize=7,
+        leading=9,
+        textColor=colors.HexColor("#1F2937"),
+    )
+    ext_val_style = ParagraphStyle(
+        "ExtVal",
+        parent=styles["Normal"],
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor("#1F2937"),
+    )
 
     elements = []
 
@@ -229,10 +243,10 @@ def generate_report(
         check_rows.append(
             [
                 str(i),
-                c["rule_name"],
-                c["rule_reference"],
+                Paragraph(c["rule_name"], table_cell_style),
+                Paragraph(c["rule_reference"], table_cell_style),
                 status_label,
-                c["details"][:80] + ("..." if len(c["details"]) > 80 else ""),
+                Paragraph(c["details"], table_cell_style),
             ]
         )
 
@@ -285,7 +299,8 @@ def generate_report(
     ]
     ext_rows = []
     for label, value in key_fields:
-        ext_rows.append([label, str(value) if value else "—"])
+        val_str = str(value) if value else "—"
+        ext_rows.append([label, Paragraph(val_str, ext_val_style)])
 
     ext_table = Table(ext_rows, colWidths=[4 * cm, 13.5 * cm])
     ext_table.setStyle(
