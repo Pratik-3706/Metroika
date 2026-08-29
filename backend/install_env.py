@@ -43,13 +43,13 @@ def main():
         print(f"[*] Installing PaddlePaddle GPU version (Index: {cu_version})...")
         subprocess.check_call([
             sys.executable, "-m", "pip", "install", "paddlepaddle-gpu==3.3.0", 
-            "-i", f"https://www.paddlepaddle.org.cn/packages/stable/{cu_version}/"
+            "--extra-index-url", f"https://www.paddlepaddle.org.cn/packages/stable/{cu_version}/"
         ])
     else:
         print("[*] Installing PaddlePaddle CPU version...")
         subprocess.check_call([
             sys.executable, "-m", "pip", "install", "paddlepaddle==3.3.0", 
-            "-i", "https://www.paddlepaddle.org.cn/packages/stable/cpu/"
+            "--extra-index-url", "https://www.paddlepaddle.org.cn/packages/stable/cpu/"
         ])
 
     print("[*] Installing PaddleOCR and dependencies...")

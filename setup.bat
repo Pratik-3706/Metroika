@@ -48,6 +48,11 @@ echo.
 :: 4. Detect GPU and install appropriate PaddlePaddle
 echo [4/5] Running Hardware Detection and AI Engine Setup...
 .\venv\Scripts\python.exe install_env.py
+if %errorlevel% neq 0 (
+    echo ERROR: Failed to install PaddlePaddle or PaddleOCR. Please check the error above.
+    pause
+    exit /b 1
+)
 echo.
 
 :: 5. Pre-download AI Models
