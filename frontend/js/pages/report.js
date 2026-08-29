@@ -56,8 +56,20 @@ const ReportPage = {
                         ${extracted['detected_category'] ? ` · <span style="color:var(--primary); font-weight:bold;">Type: ${extracted['detected_category'].toUpperCase()}</span>` : ''}
                     </div>
                 </div>
-                <div class="flex gap-3">
-                    <button class="btn btn-outline btn-sm" id="clear-cache-btn">Clear Cache</button>
+                <div class="flex gap-3" style="align-items: center;">
+                    <button class="btn btn-outline btn-sm" id="clear-cache-btn">Clear Temp Files</button>
+                    <select id="manual-category" class="form-control form-control-sm" style="display: inline-block; width: auto; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);">
+                        <option value="auto">Auto-Detect Type</option>
+                        <option value="general">General Goods</option>
+                        <option value="food">Food & Edibles</option>
+                        <option value="cosmetic">Cosmetics</option>
+                        <option value="medicine">Medicines/Drugs</option>
+                        <option value="chemical">Chemicals</option>
+                        <option value="electronics">Electronics/Hardware</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" id="run-analysis-btn">
+                        ${hasAnalysis ? 'Re-Analyze' : 'Analyze Now'}
+                    </button>
                     ${hasAnalysis ? `
                         <button class="btn btn-success btn-sm" id="dl-report-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -67,20 +79,7 @@ const ReportPage = {
                             </svg>
                             Download PDF Report
                         </button>
-                    ` : `
-                        <select id="manual-category" class="form-control form-control-sm" style="display: inline-block; width: auto; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);">
-                            <option value="auto">Auto-Detect Type</option>
-                            <option value="general">General Goods</option>
-                            <option value="food">Food & Edibles</option>
-                            <option value="cosmetic">Cosmetics</option>
-                            <option value="medicine">Medicines/Drugs</option>
-                            <option value="chemical">Chemicals</option>
-                            <option value="electronics">Electronics/Hardware</option>
-                        </select>
-                        <button class="btn btn-primary btn-sm" id="run-analysis-btn">
-                            Analyze Now
-                        </button>
-                    `}
+                    ` : ''}
                     <a href="#products" class="btn btn-outline btn-sm">← Back</a>
                 </div>
             </div>
@@ -186,7 +185,7 @@ const ReportPage = {
                 showToast(`Failed: ${error.message}`, 'error');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = 'Clear Cache';
+                btn.innerHTML = 'Clear Temp Files';
             }
         });
 
