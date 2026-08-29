@@ -20,14 +20,18 @@ const SettingsPage = {
                 </div>
             </div>
             
-            <div class="card" style="border: 1px solid var(--danger);">
+            <div class="card" style="border: 1px solid var(--danger); background-color: rgba(239, 68, 68, 0.05);">
                 <div class="card-header">
                     <div>
-                        <div class="card-title" style="color: var(--danger);">Factory Reset (Danger Zone)</div>
-                        <div class="card-subtitle">Wipes the entire database (all products and history) and deletes ALL files (including original images) from the server. This action cannot be undone. Products will start from #1 again.</div>
+                        <div class="card-title" style="color: var(--danger);">Reset Application Data (Danger Zone)</div>
+                        <div class="card-subtitle" style="color: var(--text-primary); opacity: 0.9;">
+                            Wipes the Metroika database (all scanned products and history) and deletes all uploaded images from the app's upload folder. 
+                            <strong>This only resets the app data. It will NOT affect anything else on your PC.</strong> 
+                            This action cannot be undone.
+                        </div>
                     </div>
-                    <button class="btn btn-primary" style="background-color: var(--danger); border-color: var(--danger);" id="settings-factory-reset-btn">
-                        Factory Reset System
+                    <button class="btn btn-primary" style="background-color: var(--danger); border-color: var(--danger); white-space: nowrap;" id="settings-factory-reset-btn">
+                        Reset App Data
                     </button>
                 </div>
             </div>
@@ -67,7 +71,7 @@ const SettingsPage = {
             } catch (error) {
                 showToast(`Reset Failed: ${error.message}`, 'error');
                 btn.disabled = false;
-                btn.innerHTML = 'Factory Reset System';
+                btn.innerHTML = 'Reset App Data';
             }
         });
     },
