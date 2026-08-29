@@ -167,8 +167,11 @@ async def analyze_product(
     for c in checks:
         if c["rule_id"] in key_map:
             key = key_map[c["rule_id"]]
-            # The UI/PDF expects the raw string value (evidence), not a nested status object
-            pseudo_extracted_data[key] = c.get("evidence")
+            if c["status"] == "not_applicable":
+                # If there's evidence anyway (e.g. MRP on medicine), show it. Otherwise N/A.
+                pseudo_extracted_data[key] = c.get("evidence") if c.get("evidence") else "N/A"
+            else:
+                pseudo_extracted_data[key] = c.get("evidence")
 
     # Store annotated image paths
     annotated_paths_str = json.dumps(annotated_paths) if annotated_paths else None

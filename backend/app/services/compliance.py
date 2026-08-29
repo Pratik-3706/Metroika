@@ -68,7 +68,7 @@ PATTERNS = {
         r"(?:\s*(?:IN\s+MUMBAI|O/?S\s+MUMBAI|IN\s+DELHI|O/?S\s+DELHI))?"
         r"[\s:.\-]*"
         r"(?:Rs\.?\s*|₹\s*|INR\s*)?"
-        r"([\d,]+\.?\s*\d*)"
+        r"([\d,]+\.?\d*)"
         r"(?:\s*/?\s*-)?",
         re.IGNORECASE,
     ),
@@ -306,16 +306,9 @@ def run_compliance_checks(
                 # First few text blocks are often the product name
                 top_texts = [item["text"] for item in ocr_items[:3]
                              if item["confidence"] > 0.7 and len(item["text"]) > 2]
-                
-                for text_val in top_texts:
-                    text_lower = text_val.lower()
-                    if any(kw in text_lower for kw in ["batch", "mfg", "exp", "mrp", "net", "price", "date", "instruction", "use", "direction", "warning", "caution"]):
-                        continue
+                if top_texts:
                     product_name_found = True
-                    product_name_evidence = text_val
-                    break
-                
-                if product_name_found:
+                    product_name_evidence = top_texts[0]
                     break
 
     checks.append({
@@ -723,7 +716,7 @@ def run_compliance_checks(
         for c in checks:
             if c["rule_id"] in ["R6_1_E", "MRP_FMT", "DATE_FMT"]:
                 c["status"] = "not_applicable"
-                c["details"] = "Exempt from standard metrology format; governed by DPCO/Drugs Rules."
+                c["details"] = "Not applicable under Legal Metrology (governed by DPCO/Drugs Rules)."
     
     # Electronics don't have Expiry Dates or Batch necessarily
     if category == "electronics":
