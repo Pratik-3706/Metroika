@@ -9,7 +9,7 @@ def main():
     try:
         import os
         os.environ["FLAGS_enable_pir_api"] = "0"
-        os.environ["FLAGS_use_mkldnn"] = "0"
+        os.environ["OMP_NUM_THREADS"] = "4"
         from paddleocr import PaddleOCR
     except ImportError:
         print("[!] PaddleOCR is not installed. Please run setup first.")
@@ -20,8 +20,7 @@ def main():
     ocr = PaddleOCR(
         use_textline_orientation=True,
         use_doc_orientation_classify=True,
-        lang="en",
-        enable_mkldnn=False
+        lang="en"
     )
     print("\n[+] Models downloaded and cached successfully!")
     
