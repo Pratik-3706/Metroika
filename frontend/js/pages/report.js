@@ -106,18 +106,18 @@ const ReportPage = {
                             <div class="card-title">Extracted Label Data</div>
                         </div>
                         <dl class="extracted-data">
-                            ${this._renderExtractedField('Product Name', extracted['R6_1_A']?.evidence)}
-                            ${this._renderExtractedField('Manufacturer', extracted['R6_1_B']?.evidence)}
-                            ${this._renderExtractedField('Net Quantity', extracted['R6_1_C']?.evidence)}
-                            ${this._renderExtractedField('Mfg. Date', extracted['R6_1_D']?.evidence)}
-                            ${this._renderExtractedField('MRP', extracted['R6_1_E']?.evidence)}
-                            ${this._renderExtractedField('Best Before', extracted['BB_1']?.evidence)}
-                            ${this._renderExtractedField('Batch No.', extracted['BATCH_1']?.evidence)}
-                            ${this._renderExtractedField('Consumer Care', extracted['R6_1_H']?.evidence)}
-                            ${this._renderExtractedField('FSSAI License', extracted['FSSAI_1']?.evidence)}
-                            ${this._renderExtractedField('Ingredients', extracted['ING_1']?.evidence)}
-                            ${this._renderExtractedField('Allergens', extracted['ALLRG_1']?.evidence)}
-                            ${this._renderExtractedField('Barcode/QR', extracted['BARCODE']?.evidence)}
+                            ${this._renderExtractedField('Product Name', extracted['product_name'])}
+                            ${this._renderExtractedField('Manufacturer', extracted['manufacturer_name'])}
+                            ${this._renderExtractedField('Net Quantity', extracted['net_quantity'])}
+                            ${this._renderExtractedField('Mfg. Date', extracted['manufacture_date'])}
+                            ${this._renderExtractedField('MRP', extracted['mrp'])}
+                            ${this._renderExtractedField('Best Before', extracted['expiry_date'])}
+                            ${this._renderExtractedField('Batch No.', extracted['batch_number'])}
+                            ${this._renderExtractedField('Consumer Care', extracted['consumer_care'])}
+                            ${this._renderExtractedField('FSSAI License', extracted['fssai_license'])}
+                            ${this._renderExtractedField('Ingredients', extracted['ingredients'])}
+                            ${this._renderExtractedField('Allergens', extracted['allergens'])}
+                            ${this._renderExtractedField('Barcode/QR', extracted['barcode'])}
                         </dl>
                     </div>
                 </div>

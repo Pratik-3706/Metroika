@@ -153,7 +153,10 @@ async def analyze_product(
         "R6_1_H": "consumer_care",
         "FSSAI_1": "fssai_license",
         "BB_1": "expiry_date",
-        "BATCH_1": "batch_number"
+        "BATCH_1": "batch_number",
+        "ING_1": "ingredients",
+        "ALLRG_1": "allergens",
+        "BARCODE": "barcode"
     }
 
     pseudo_extracted_data = {}
