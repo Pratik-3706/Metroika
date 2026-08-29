@@ -37,12 +37,17 @@ const DashboardPage = {
                         <div class="card-title">Recent Scans</div>
                         <div class="card-subtitle">Latest product compliance checks</div>
                     </div>
-                    <a href="#scan" class="btn btn-primary btn-sm">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        New Scan
-                    </a>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-outline btn-sm" id="dash-clear-cache-btn">
+                            Clear Temp Files
+                        </button>
+                        <a href="#scan" class="btn btn-primary btn-sm">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            New Scan
+                        </a>
+                    </div>
                 </div>
                 <div id="recent-scans-table">
                     <p class="text-muted text-sm">Loading...</p>
@@ -51,6 +56,21 @@ const DashboardPage = {
         `;
 
         await this._loadData();
+
+        document.getElementById('dash-clear-cache-btn')?.addEventListener('click', async () => {
+            const btn = document.getElementById('dash-clear-cache-btn');
+            btn.disabled = true;
+            btn.innerHTML = 'Clearing...';
+            try {
+                const res = await API.clearCache();
+                showToast(res.message, 'success');
+            } catch (error) {
+                showToast(`Failed: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Clear Temp Files';
+            }
+        });
     },
 
     unmount() {
