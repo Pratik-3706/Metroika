@@ -28,11 +28,25 @@ const ScanPage = {
 
                     <div class="card mb-6">
                         <div class="card-header">
-                            <div class="card-title">Product Name (Optional)</div>
+                            <div class="card-title">Analysis Settings</div>
                         </div>
                         <div class="form-group" style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 13px; margin-bottom: 4px; font-weight: 500;">Product Name (Optional)</label>
                             <input type="text" class="form-input" id="product-name-input"
                                    placeholder="e.g., Parle-G Gold Biscuits 200g">
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 13px; margin-bottom: 4px; font-weight: 500;">Product Category (Optional)</label>
+                            <select id="scan-category-select" class="form-control" style="width: 100%;">
+                                <option value="auto">Auto-Detect Type</option>
+                                <option value="general">General Goods</option>
+                                <option value="food">Food & Edibles</option>
+                                <option value="cosmetic">Cosmetics</option>
+                                <option value="medicine">Medicines/Drugs</option>
+                                <option value="chemical">Chemicals</option>
+                                <option value="electronics">Electronics/Hardware</option>
+                            </select>
                         </div>
                         
                         <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
@@ -173,7 +187,10 @@ const ScanPage = {
                 }
             }, 500);
 
-            const result = await API.analyzeProduct(product.id, skipAi);
+            const categorySelect = document.getElementById('scan-category-select');
+            const category = categorySelect ? categorySelect.value : 'auto';
+            const result = await API.analyzeProduct(product.id, skipAi, category);
+            
             this._setStep('ai', 'done');
             this._setStep('compliance', 'done');
 
