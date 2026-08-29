@@ -53,9 +53,11 @@ const ReportPage = {
                     <div class="text-sm text-muted mt-1">
                         Scanned: ${new Date(product.created_at).toLocaleString()}
                         ${product.barcode_data ? ` · Barcode: ${product.barcode_data} (${product.barcode_type || 'Unknown'})` : ''}
+                        ${extracted['detected_category'] ? ` · <span style="color:var(--primary); font-weight:bold;">Type: ${extracted['detected_category'].toUpperCase()}</span>` : ''}
                     </div>
                 </div>
                 <div class="flex gap-3">
+                    <button class="btn btn-outline btn-sm" id="clear-cache-btn">Clear Cache</button>
                     ${hasAnalysis ? `
                         <button class="btn btn-success btn-sm" id="dl-report-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -66,6 +68,15 @@ const ReportPage = {
                             Download PDF Report
                         </button>
                     ` : `
+                        <select id="manual-category" class="form-control form-control-sm" style="display: inline-block; width: auto; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);">
+                            <option value="auto">Auto-Detect Type</option>
+                            <option value="general">General Goods</option>
+                            <option value="food">Food & Edibles</option>
+                            <option value="cosmetic">Cosmetics</option>
+                            <option value="medicine">Medicines/Drugs</option>
+                            <option value="chemical">Chemicals</option>
+                            <option value="electronics">Electronics/Hardware</option>
+                        </select>
                         <button class="btn btn-primary btn-sm" id="run-analysis-btn">
                             Analyze Now
                         </button>
@@ -164,12 +175,30 @@ const ReportPage = {
             }
         });
 
+        document.getElementById('clear-cache-btn')?.addEventListener('click', async () => {
+            const btn = document.getElementById('clear-cache-btn');
+            btn.disabled = true;
+            btn.innerHTML = 'Clearing...';
+            try {
+                const res = await API.clearCache();
+                showToast(res.message, 'success');
+            } catch (error) {
+                showToast(`Failed: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Clear Cache';
+            }
+        });
+
         document.getElementById('run-analysis-btn')?.addEventListener('click', async () => {
             const btn = document.getElementById('run-analysis-btn');
+            const catSelect = document.getElementById('manual-category');
+            const category = catSelect ? catSelect.value : 'auto';
+            
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> Analyzing...';
             try {
-                await API.analyzeProduct(product.id);
+                await API.analyzeProduct(product.id, false, category);
                 showToast('Analysis complete!', 'success');
                 // Reload page
                 this.mount(container, product.id);

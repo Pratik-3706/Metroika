@@ -49,6 +49,7 @@ class Product(Base):
     barcode_data: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     barcode_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     qrcode_data: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     status: Mapped[str] = mapped_column(
         String(20), default=ComplianceStatus.PENDING.value
     )

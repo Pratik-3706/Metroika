@@ -232,6 +232,35 @@ def _search_with_fallback(raw_text: str, primary_key: str, fallback_pattern: str
 
 
 # ---------------------------------------------------------------------------
+# Product Category Detection
+# ---------------------------------------------------------------------------
+def detect_product_category(raw_text: str) -> str:
+    """Detect product category based on OCR text heuristics."""
+    text_lower = raw_text.lower()
+    
+    # Medicines
+    if any(kw in text_lower for kw in ["schedule h", "rx", "medical practitioner", "dpco", "schedule-h", "schedule g"]):
+        return "medicine"
+        
+    # Cosmetics
+    if any(kw in text_lower for kw in ["cosmetic", "inci", "external use only"]):
+        return "cosmetic"
+        
+    # Food
+    if any(kw in text_lower for kw in ["fssai", "nutrition", "veg", "food", "edible"]):
+        return "food"
+        
+    # Chemicals
+    if any(kw in text_lower for kw in ["poison", "hazard", "danger", "insecticide", "pesticide"]):
+        return "chemical"
+        
+    # Electronics
+    if any(kw in text_lower for kw in ["bis", "bee", "voltage", "watts", "electronics", "ac/dc", "hz"]):
+        return "electronics"
+        
+    return "general"
+
+# ---------------------------------------------------------------------------
 # Main Compliance Check Runner
 # ---------------------------------------------------------------------------
 
@@ -239,7 +268,8 @@ def run_compliance_checks(
     raw_text: str,
     barcode_results: Dict,
     structured_ocr: Optional[Dict[str, List[Dict]]] = None,
-) -> List[Dict]:
+    manual_category: Optional[str] = None
+) -> Tuple[List[Dict], str]:
     """
     Run all compliance checks against raw OCR text.
 
@@ -249,10 +279,16 @@ def run_compliance_checks(
         raw_text: Concatenated OCR text from all images.
         barcode_results: Output from barcode scanner.
         structured_ocr: Optional structured OCR data with bounding boxes.
+        manual_category: Optional manual override from UI.
 
     Returns:
-        List of compliance check result dicts.
+        (List of compliance check result dicts, detected category)
     """
+    if manual_category and manual_category.strip() and manual_category != "auto":
+        category = manual_category.strip().lower()
+    else:
+        category = detect_product_category(raw_text)
+
     checks: List[Dict] = []
 
     # -----------------------------------------------------------------------
@@ -674,7 +710,33 @@ def run_compliance_checks(
         "severity": BARCODE_RULE["severity"],
     })
 
-    return checks
+    # Conditionally remove or mark rules based on category
+    # Medicine exempt from standard MRP and Date Format (has strict DPCO/Drug rules)
+    if category == "medicine":
+        checks = [c for c in checks if c["rule_id"] not in ["R6_1_E", "MRP_FMT", "DATE_FMT"]]
+    
+    # Electronics don't have Expiry Dates or Batch necessarily
+    if category == "electronics":
+        for c in checks:
+            if c["rule_id"] in ["BB_1"]:
+                c["status"] = "not_applicable"
+                c["details"] = "Expiry date not applicable for electronics."
+
+    # General goods don't have FSSAI, Veg/NonVeg, Allergen, Nutrition
+    if category in ["general", "electronics", "chemical"]:
+        for c in checks:
+            if c["rule_id"] in ["FSSAI_1", "VEG_1", "ALLRG_1", "NUT_1", "ING_1"]:
+                c["status"] = "not_applicable"
+                c["details"] = f"Not applicable for {category} category."
+
+    # Cosmetics don't have Veg/NonVeg, Allergen, Nutrition (usually)
+    if category == "cosmetic":
+        for c in checks:
+            if c["rule_id"] in ["VEG_1", "ALLRG_1", "NUT_1", "FSSAI_1"]:
+                c["status"] = "not_applicable"
+                c["details"] = "Not applicable for cosmetic category."
+
+    return checks, category
 
 
 def calculate_compliance_score(checks: List[Dict]) -> Dict:

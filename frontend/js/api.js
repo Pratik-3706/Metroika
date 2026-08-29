@@ -61,14 +61,24 @@ const API = {
     },
 
     // ----- Analysis -----
-    async analyzeProduct(productId, skipAi = false) {
-        return this.request(`/api/products/${productId}/analyze?skip_ai=${skipAi}`, {
+    async analyzeProduct(productId, skipAi = false, category = 'auto') {
+        let url = `/api/products/${productId}/analyze?skip_ai=${skipAi}`;
+        if (category && category !== 'auto') {
+            url += `&category=${category}`;
+        }
+        return this.request(url, {
             method: 'POST',
         });
     },
 
     async getAnalysis(productId) {
         return this.request(`/api/products/${productId}/analysis`);
+    },
+
+    async clearCache() {
+        return this.request(`/api/products/clear_cache`, {
+            method: 'POST',
+        });
     },
 
     // ----- Reports -----

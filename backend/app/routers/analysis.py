@@ -43,6 +43,7 @@ router = APIRouter(prefix="/api/products", tags=["analysis"])
 async def analyze_product(
     product_id: int,
     skip_ai: bool = False,
+    category: str = None,
     db: AsyncSession = Depends(get_session),
 ):
     """
@@ -98,8 +99,11 @@ async def analyze_product(
     logger.info(f"Generated {len(annotated_paths)} annotated images.")
 
     # Step 3: Rule Engine (PRIMARY compliance checker)
-    logger.info("Step 3: Running Rule Engine (primary compliance checks)...")
-    initial_checks = run_compliance_checks(raw_text, barcode_results, structured_ocr)
+    logger.info(f"Step 3: Running Rule Engine (primary compliance checks) with category {category}...")
+    initial_checks, detected_category = run_compliance_checks(
+        raw_text, barcode_results, structured_ocr, manual_category=category
+    )
+    product.category = detected_category
 
     # Step 4: AI Verification (OPTIONAL)
     ai_used = False
@@ -159,7 +163,7 @@ async def analyze_product(
         "BARCODE": "barcode"
     }
 
-    pseudo_extracted_data = {}
+    pseudo_extracted_data = {"detected_category": detected_category}
     for c in checks:
         if c["rule_id"] in key_map:
             key = key_map[c["rule_id"]]
@@ -237,3 +241,32 @@ async def get_analysis(
             status_code=404, detail="No analysis found for this product."
         )
     return analysis
+
+
+@router.post("/clear_cache")
+async def clear_cache():
+    """Clear all cached images, txt, and json files in the uploads folder and PDF reports."""
+    import os
+    import shutil
+    
+    deleted_files = 0
+    
+    # Clear uploads dir
+    for ext in ["*.txt", "*.json", "*_ocr_annotated.jpg", "*_ocr_annotated.jpeg", "*_ocr_annotated.png"]:
+        for file_path in settings.upload_dir.glob(ext):
+            try:
+                os.remove(file_path)
+                deleted_files += 1
+            except Exception as e:
+                logger.error(f"Failed to delete {file_path}: {e}")
+                
+    # Clear reports dir
+    for file_path in settings.report_dir.glob("*.pdf"):
+        try:
+            os.remove(file_path)
+            deleted_files += 1
+        except Exception as e:
+            logger.error(f"Failed to delete {file_path}: {e}")
+            
+    return {"message": f"Successfully deleted {deleted_files} cached files.", "deleted_files": deleted_files}
+

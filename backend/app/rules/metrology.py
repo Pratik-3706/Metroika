@@ -198,8 +198,11 @@ DATE_FORMAT_RULE = {
     "severity": "medium",
 }
 
-# Collect all rules for iteration
-ALL_RULES: Dict[str, Dict] = {
+# ---------------------------------------------------------------------------
+# Rule Sets by Category
+# ---------------------------------------------------------------------------
+# Universal Core (Rule 6) - applies to all general commodities
+UNIVERSAL_CORE_RULES: Dict[str, Dict] = {
     **MANDATORY_DECLARATIONS,
     FONT_SIZE_RULE["rule_id"]: FONT_SIZE_RULE,
     PDP_RULE["rule_id"]: PDP_RULE,
@@ -208,6 +211,47 @@ ALL_RULES: Dict[str, Dict] = {
     BARCODE_RULE["rule_id"]: BARCODE_RULE,
     MRP_FORMAT_RULE["rule_id"]: MRP_FORMAT_RULE,
     DATE_FORMAT_RULE["rule_id"]: DATE_FORMAT_RULE,
+}
+
+# Medicines / Drugs - entirely different regime (DPCO / Drugs Rules)
+# Excludes general MRP format, general date formats, etc.
+MEDICINE_RULES: Dict[str, Dict] = {
+    "R6_1_A_NAME": MANDATORY_DECLARATIONS["R6_1_A_NAME"],
+    "R6_1_A_ADDR": MANDATORY_DECLARATIONS["R6_1_A_ADDR"],
+    "R6_1_B": MANDATORY_DECLARATIONS["R6_1_B"],  # Common name
+    "R6_1_C": MANDATORY_DECLARATIONS["R6_1_C"],  # Net Qty
+    "R6_1_F": MANDATORY_DECLARATIONS["R6_1_F"],  # Consumer care
+    "R6_1_G": MANDATORY_DECLARATIONS["R6_1_G"],  # Origin
+    FONT_SIZE_RULE["rule_id"]: FONT_SIZE_RULE,
+    PDP_RULE["rule_id"]: PDP_RULE,
+    LANGUAGE_RULE["rule_id"]: LANGUAGE_RULE,
+    BARCODE_RULE["rule_id"]: BARCODE_RULE,
+    # Medicine specific fields will be detected and added in compliance.py
+}
+
+# Electronics / Hardware - No expiry dates
+ELECTRONICS_RULES: Dict[str, Dict] = {
+    k: v for k, v in UNIVERSAL_CORE_RULES.items() 
+}
+
+# Food & Goods - Universal + FSSAI rules
+FOOD_RULES: Dict[str, Dict] = {
+    k: v for k, v in UNIVERSAL_CORE_RULES.items()
+}
+
+# Cosmetics - Universal + INCI, Mfg Lic
+COSMETICS_RULES: Dict[str, Dict] = {
+    k: v for k, v in UNIVERSAL_CORE_RULES.items()
+}
+
+# Chemicals - Universal + Hazard
+CHEMICAL_RULES: Dict[str, Dict] = {
+    k: v for k, v in UNIVERSAL_CORE_RULES.items()
+}
+
+# Collect all rules for fallback/iteration
+ALL_RULES: Dict[str, Dict] = {
+    **UNIVERSAL_CORE_RULES,
 }
 
 
