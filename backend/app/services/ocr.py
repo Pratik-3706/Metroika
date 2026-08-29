@@ -29,8 +29,8 @@ try:
     
     # Initialize with orientation classification enabled to fix vertical text issues
     ocr_engine = PaddleOCR(
-        use_textline_orientation=True,       # Enables character rotation classification
-        use_doc_orientation_classify=True,   # Enables full document rotation classification
+        use_textline_orientation=True,       # Enables character/line rotation classification (keep this)
+        use_doc_orientation_classify=False,  # Disable full document rotation as it incorrectly flips packaging images
         use_doc_unwarping=False,
         enable_mkldnn=False,                 # MUST be False to prevent PIR array attribute crash
         cpu_threads=4                        # Limit math threads to prevent the 5+ minute hang

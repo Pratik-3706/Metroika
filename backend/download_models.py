@@ -19,7 +19,7 @@ def main():
     # Initialize with the exact flags used in ocr.py to ensure the exact models are cached
     ocr = PaddleOCR(
         use_textline_orientation=True,
-        use_doc_orientation_classify=True,
+        use_doc_orientation_classify=False,
         lang="en",
         enable_mkldnn=False,
         cpu_threads=4
