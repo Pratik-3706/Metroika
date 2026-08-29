@@ -26,8 +26,7 @@ try:
     ocr_engine = PaddleOCR(
         use_angle_cls=True,                  # Enables character rotation classification
         use_doc_orientation_classify=True,   # Enables full document rotation classification
-        use_doc_unwarping=False,
-        show_log=False                       # Prevent spamming "Using cached files" to terminal
+        use_doc_unwarping=False
     )
     HAS_OCR = True
     logger.info("PaddleOCR (v3.7) initialized successfully.")
