@@ -750,6 +750,9 @@ def calculate_compliance_score(checks: List[Dict]) -> Dict:
     failed = 0
     warnings = 0
 
+    critical_fails = 0
+    high_fails = 0
+
     for c in checks:
         if c["status"] == "not_applicable":
             continue
@@ -758,18 +761,23 @@ def calculate_compliance_score(checks: List[Dict]) -> Dict:
             passed += 1
         elif c["status"] == "fail":
             failed += 1
+            severity = c.get("severity", "medium")
+            if severity == "critical":
+                critical_fails += 1
+            elif severity == "high":
+                high_fails += 1
         elif c["status"] == "warning":
             warnings += 1
 
     score = (passed / total * 100) if total > 0 else 0
 
     # Determine overall status
-    if failed == 0 and warnings == 0:
-        status = "compliant"
-    elif failed == 0:
+    if critical_fails > 0 or high_fails > 0:
+        status = "non_compliant"
+    elif failed > 0 or warnings > 0:
         status = "warning"
     else:
-        status = "non_compliant"
+        status = "compliant"
 
     return {
         "score": round(score, 1),
