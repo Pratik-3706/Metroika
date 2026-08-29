@@ -20,7 +20,7 @@ HAS_OCR = False
 ocr_engine = None
 
 try:
-    # Disable PIR API to prevent C++ crashes on certain CPUs, but KEEP mkldnn enabled for speed
+    # Disable PIR API to prevent C++ crashes on certain CPUs
     os.environ["FLAGS_enable_pir_api"] = "0"
     # Prevent CPU thread thrashing which can cause 5+ minute hangs
     os.environ["OMP_NUM_THREADS"] = "4"
@@ -31,7 +31,9 @@ try:
     ocr_engine = PaddleOCR(
         use_textline_orientation=True,       # Enables character rotation classification
         use_doc_orientation_classify=True,   # Enables full document rotation classification
-        use_doc_unwarping=False
+        use_doc_unwarping=False,
+        enable_mkldnn=False,                 # MUST be False to prevent PIR array attribute crash
+        cpu_threads=4                        # Limit math threads to prevent the 5+ minute hang
     )
     HAS_OCR = True
     logger.info("PaddleOCR (v3.7) initialized successfully.")

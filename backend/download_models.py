@@ -20,7 +20,9 @@ def main():
     ocr = PaddleOCR(
         use_textline_orientation=True,
         use_doc_orientation_classify=True,
-        lang="en"
+        lang="en",
+        enable_mkldnn=False,
+        cpu_threads=4
     )
     print("\n[+] Models downloaded and cached successfully!")
     
