@@ -68,7 +68,7 @@ PATTERNS = {
         r"(?:\s*(?:IN\s+MUMBAI|O/?S\s+MUMBAI|IN\s+DELHI|O/?S\s+DELHI))?"
         r"[\s:.\-]*"
         r"(?:Rs\.?\s*|₹\s*|INR\s*)?"
-        r"([\d,]+\.?\d*)"
+        r"([\d,]+\.?\s*\d*)"
         r"(?:\s*/?\s*-)?",
         re.IGNORECASE,
     ),
@@ -306,9 +306,16 @@ def run_compliance_checks(
                 # First few text blocks are often the product name
                 top_texts = [item["text"] for item in ocr_items[:3]
                              if item["confidence"] > 0.7 and len(item["text"]) > 2]
-                if top_texts:
+                
+                for text_val in top_texts:
+                    text_lower = text_val.lower()
+                    if any(kw in text_lower for kw in ["batch", "mfg", "exp", "mrp", "net", "price", "date"]):
+                        continue
                     product_name_found = True
-                    product_name_evidence = top_texts[0]
+                    product_name_evidence = text_val
+                    break
+                
+                if product_name_found:
                     break
 
     checks.append({
