@@ -76,6 +76,14 @@ async def create_report(
     }
     extracted = json.loads(analysis.extracted_data) if analysis.extracted_data else {}
 
+    # Parse annotated image paths if available
+    annotated_paths = []
+    if analysis.ocr_annotated_images:
+        try:
+            annotated_paths = json.loads(analysis.ocr_annotated_images)
+        except (json.JSONDecodeError, TypeError):
+            annotated_paths = []
+
     # Generate PDF
     report_path = generate_report(
         product_name=product.name or "Unknown Product",
@@ -85,6 +93,7 @@ async def create_report(
         checks=checks,
         score_info=score_info,
         extracted_data=extracted,
+        annotated_image_paths=annotated_paths,
     )
 
     # Update analysis with report path

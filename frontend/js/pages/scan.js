@@ -38,7 +38,7 @@ const ScanPage = {
                         <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
                             <input type="checkbox" id="skip-ai-toggle" style="width: 16px; height: 16px;">
                             <label for="skip-ai-toggle" style="margin: 0; font-weight: 500; cursor: pointer;">
-                                Bypass AI Vision Check (Save API Credits / Fast Mode)
+                                Bypass AI Verifier (Save API Credits / Fast Mode)
                             </label>
                         </div>
                     </div>
@@ -64,15 +64,15 @@ const ScanPage = {
                             </div>
                             <div class="pipeline-connector" id="conn-1"></div>
                             <div class="pipeline-step" id="step-barcode">
-                                <span>📊</span> Barcode Scan
+                                <span>📊</span> Barcode + OCR
                             </div>
                             <div class="pipeline-connector" id="conn-2"></div>
                             <div class="pipeline-step" id="step-ai">
-                                <span>🤖</span> AI Analysis
+                                <span>⚖️</span> Rule Engine
                             </div>
                             <div class="pipeline-connector" id="conn-3"></div>
                             <div class="pipeline-step" id="step-compliance">
-                                <span>✅</span> Compliance Check
+                                <span>🤖</span> AI Verify
                             </div>
                         </div>
                     </div>
@@ -179,7 +179,7 @@ const ScanPage = {
 
             // Show results
             this.analysisResult = result;
-            await this._showResults(product.id, result);
+            await this._showResults(product.id, result, skipAi);
 
             showToast(`Analysis complete! Score: ${result.compliance_score.toFixed(0)}%`,
                 result.status === 'compliant' ? 'success' : 'error');
@@ -223,7 +223,7 @@ const ScanPage = {
         }
     },
 
-    async _showResults(productId, result) {
+    async _showResults(productId, result, skipAi = false) {
         const panel = document.getElementById('results-panel');
         if (!panel) return;
 
@@ -238,6 +238,11 @@ const ScanPage = {
         const checks = analysis?.checks || [];
 
         panel.innerHTML = `
+            ${skipAi ? `
+            <div style="background-color: rgba(255, 193, 7, 0.1); color: #ffb800; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid rgba(255, 193, 7, 0.3);">
+                <strong>⚠️ AI Evaluator Bypassed</strong><br>
+                This score was generated purely by the local OCR and Regex Rule Engine. The AI verifier was skipped, meaning any text missed by OCR (due to curved bottles, bad lighting, etc.) was not double-checked or corrected.
+            </div>` : ''}
             <div class="card mb-6">
                 ${ComplianceCard.renderScoreCircle(result.compliance_score, result.status)}
                 <div style="text-align: center; margin-top: 12px;">
@@ -257,6 +262,7 @@ const ScanPage = {
                     <a href="#report/${productId}" class="btn btn-outline btn-sm">View Details</a>
                 </div>
             </div>
+            ${this._renderAnnotatedImages(analysis)}
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">Compliance Checks</div>
@@ -288,5 +294,48 @@ const ScanPage = {
                 `;
             }
         });
+    },
+
+    _renderAnnotatedImages(analysis) {
+        if (!analysis?.ocr_annotated_images) return '';
+
+        let paths = [];
+        try {
+            paths = JSON.parse(analysis.ocr_annotated_images);
+        } catch (e) {
+            return '';
+        }
+
+        if (!paths || paths.length === 0) return '';
+
+        const imageHtml = paths.map(p => {
+            const normalized = p.replace(/\\/g, '/');
+            const uploadsIdx = normalized.indexOf('uploads/');
+            const relativePath = uploadsIdx >= 0 ? normalized.substring(uploadsIdx) : normalized;
+            const url = `${API.BASE_URL.replace('/api', '')}/${relativePath}`;
+            return `<img src="${url}" alt="OCR Annotated" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;">`;
+        }).join('');
+
+        return `
+            <div class="card mb-6">
+                <div class="card-header">
+                    <div class="card-title">🔍 OCR Analysis — Annotated Output</div>
+                    <div class="card-subtitle">Color-coded bounding boxes show detected text</div>
+                </div>
+                <div style="padding: 0 16px 8px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; font-size: 10px;">
+                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(255,0,0,0.1); color: #ff4444; border: 1px solid rgba(255,0,0,0.3);">■ MRP</span>
+                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(0,0,255,0.1); color: #4444ff; border: 1px solid rgba(0,0,255,0.3);">■ Net Qty</span>
+                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(255,165,0,0.1); color: #ff8c00; border: 1px solid rgba(255,165,0,0.3);">■ Dates</span>
+                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(0,128,0,0.1); color: #008000; border: 1px solid rgba(0,128,0,0.3);">■ Mfr</span>
+                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(128,0,128,0.1); color: #800080; border: 1px solid rgba(128,0,128,0.3);">■ FSSAI</span>
+                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(0,200,0,0.1); color: #00c800; border: 1px solid rgba(0,200,0,0.3);">■ Other</span>
+                    </div>
+                </div>
+                <div style="padding: 0 16px 16px;">
+                    ${imageHtml}
+                </div>
+            </div>
+        `;
     },
 };

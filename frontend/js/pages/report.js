@@ -89,6 +89,8 @@ const ReportPage = {
             </div>
 
             ${hasAnalysis ? `
+                ${this._renderAnnotatedImages(analysis)}
+
                 <!-- Compliance Score -->
                 <div class="grid-2 mb-6">
                     <div class="card">
@@ -104,17 +106,18 @@ const ReportPage = {
                             <div class="card-title">Extracted Label Data</div>
                         </div>
                         <dl class="extracted-data">
-                            ${this._renderExtractedField('Product Name', extracted.product_name)}
-                            ${this._renderExtractedField('Manufacturer', extracted.manufacturer_name)}
-                            ${this._renderExtractedField('Address', extracted.manufacturer_address)}
-                            ${this._renderExtractedField('Net Quantity', extracted.net_quantity)}
-                            ${this._renderExtractedField('MRP', extracted.mrp)}
-                            ${this._renderExtractedField('Mfg. Date', extracted.manufacture_date)}
-                            ${this._renderExtractedField('Expiry', extracted.expiry_date)}
-                            ${this._renderExtractedField('Consumer Care', extracted.consumer_care)}
-                            ${this._renderExtractedField('Country of Origin', extracted.country_of_origin)}
-                            ${this._renderExtractedField('FSSAI License', extracted.fssai_license)}
-                            ${this._renderExtractedField('Batch No.', extracted.batch_number)}
+                            ${this._renderExtractedField('Product Name', extracted['R6_1_A']?.evidence)}
+                            ${this._renderExtractedField('Manufacturer', extracted['R6_1_B']?.evidence)}
+                            ${this._renderExtractedField('Net Quantity', extracted['R6_1_C']?.evidence)}
+                            ${this._renderExtractedField('Mfg. Date', extracted['R6_1_D']?.evidence)}
+                            ${this._renderExtractedField('MRP', extracted['R6_1_E']?.evidence)}
+                            ${this._renderExtractedField('Best Before', extracted['BB_1']?.evidence)}
+                            ${this._renderExtractedField('Batch No.', extracted['BATCH_1']?.evidence)}
+                            ${this._renderExtractedField('Consumer Care', extracted['R6_1_H']?.evidence)}
+                            ${this._renderExtractedField('FSSAI License', extracted['FSSAI_1']?.evidence)}
+                            ${this._renderExtractedField('Ingredients', extracted['ING_1']?.evidence)}
+                            ${this._renderExtractedField('Allergens', extracted['ALLRG_1']?.evidence)}
+                            ${this._renderExtractedField('Barcode/QR', extracted['BARCODE']?.evidence)}
                         </dl>
                     </div>
                 </div>
@@ -182,6 +185,53 @@ const ReportPage = {
         return `
             <dt>${label}</dt>
             <dd>${value || '<span class="text-muted">—</span>'}</dd>
+        `;
+    },
+
+    _renderAnnotatedImages(analysis) {
+        if (!analysis?.ocr_annotated_images) return '';
+
+        let paths = [];
+        try {
+            paths = JSON.parse(analysis.ocr_annotated_images);
+        } catch (e) {
+            return '';
+        }
+
+        if (!paths || paths.length === 0) return '';
+
+        // Convert absolute paths to URLs served by the backend
+        const imageHtml = paths.map(p => {
+            // Extract the relative path from "uploads/..." onwards
+            const normalized = p.replace(/\\/g, '/');
+            const uploadsIdx = normalized.indexOf('uploads/');
+            const relativePath = uploadsIdx >= 0 ? normalized.substring(uploadsIdx) : normalized;
+            const url = `${API.BASE_URL.replace('/api', '')}/${relativePath}`;
+            return `<img src="${url}" alt="OCR Annotated" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;">`;
+        }).join('');
+
+        return `
+            <div class="card mb-6">
+                <div class="card-header">
+                    <div class="card-title">🔍 OCR Analysis — Annotated Output</div>
+                    <div class="card-subtitle">Color-coded bounding boxes around detected text fields</div>
+                </div>
+                <div style="padding: 0 16px 8px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; font-size: 11px;">
+                        <span style="padding: 2px 8px; border-radius: 4px; background: rgba(255,0,0,0.1); color: #ff4444; border: 1px solid rgba(255,0,0,0.3);">■ MRP</span>
+                        <span style="padding: 2px 8px; border-radius: 4px; background: rgba(0,0,255,0.1); color: #4444ff; border: 1px solid rgba(0,0,255,0.3);">■ Net Qty</span>
+                        <span style="padding: 2px 8px; border-radius: 4px; background: rgba(255,165,0,0.1); color: #ff8c00; border: 1px solid rgba(255,165,0,0.3);">■ Dates</span>
+                        <span style="padding: 2px 8px; border-radius: 4px; background: rgba(0,128,0,0.1); color: #008000; border: 1px solid rgba(0,128,0,0.3);">■ Manufacturer</span>
+                        <span style="padding: 2px 8px; border-radius: 4px; background: rgba(128,0,128,0.1); color: #800080; border: 1px solid rgba(128,0,128,0.3);">■ FSSAI</span>
+                        <span style="padding: 2px 8px; border-radius: 4px; background: rgba(0,255,255,0.1); color: #008080; border: 1px solid rgba(0,128,128,0.3);">■ Nutritional</span>
+                        <span style="padding: 2px 8px; border-radius: 4px; background: rgba(255,105,180,0.1); color: #ff69b4; border: 1px solid rgba(255,105,180,0.3);">■ Ingredients</span>
+                        <span style="padding: 2px 8px; border-radius: 4px; background: rgba(0,200,0,0.1); color: #00c800; border: 1px solid rgba(0,200,0,0.3);">■ Other</span>
+                    </div>
+                </div>
+                <div style="padding: 0 16px 16px;">
+                    ${imageHtml}
+                </div>
+            </div>
         `;
     },
 };

@@ -91,6 +91,7 @@ class Analysis(Base):
     failed_checks: Mapped[int] = mapped_column(Integer, default=0)
     warning_checks: Mapped[int] = mapped_column(Integer, default=0)
     report_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    ocr_annotated_images: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON list of paths
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     product: Mapped["Product"] = relationship(back_populates="analyses")

@@ -80,6 +80,7 @@ class AnalysisOut(BaseModel):
     warning_checks: int
     extracted_data: Optional[str] = None
     report_path: Optional[str] = None
+    ocr_annotated_images: Optional[str] = None
     created_at: datetime
     checks: List[ComplianceCheckOut] = []
 

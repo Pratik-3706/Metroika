@@ -22,6 +22,7 @@ metroika.db
 backend/uploads/
 backend/reports/
 backend/downloads/
+backend/dummy_label.jpg
 
 # Logs
 *.log

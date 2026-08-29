@@ -1,5 +1,12 @@
 """
 Analysis router — triggers the full compliance analysis pipeline.
+
+Pipeline:
+1. Barcode/QR scan
+2. PaddleOCR (structured + annotated image)
+3. Rule Engine (primary compliance checker)
+4. AI Verifier (optional second-pass)
+5. Store results
 """
 
 import json
@@ -19,8 +26,13 @@ from app.database import (
 )
 from app.models import AnalysisOut, AnalysisResponse
 from app.services.barcode import scan_multiple_images
-from app.services.vision import analyze_product_images
+from app.services.vision import evaluate_with_ai, is_ai_available
 from app.services.compliance import run_compliance_checks, calculate_compliance_score
+from app.services.ocr import (
+    extract_raw_text_from_images,
+    extract_all_structured,
+    generate_all_annotated_images,
+)
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -35,10 +47,10 @@ async def analyze_product(
 ):
     """
     Run the full compliance analysis pipeline on a product:
-    1. Load all product images
-    2. Scan for barcodes/QR codes
-    3. Send images to AI vision model for label extraction (unless skip_ai=True)
-    4. Run compliance engine against extracted data
+    1. Scan for barcodes/QR codes
+    2. PaddleOCR — extract text with bounding boxes + generate annotated image
+    3. Rule Engine — regex-based compliance checks (PRIMARY)
+    4. AI Verifier — optional second-pass verification (can be disabled)
     5. Store results
     """
     # Load product with images
@@ -70,64 +82,89 @@ async def analyze_product(
     if barcode_results.get("qrcode_data"):
         product.qrcode_data = barcode_results["qrcode_data"]
 
-    # Step 2: AI Vision analysis
-    if skip_ai:
-        logger.info("Step 2: AI Vision analysis (SKIPPED via UI toggle)...")
-        extracted_data = {}
+    # Step 2: PaddleOCR — structured extraction + annotated image
+    logger.info("Step 2: Extracting text via PaddleOCR...")
+    structured_ocr = extract_all_structured(image_paths)
+    raw_text = " ".join(
+        item["text"]
+        for ocr_items in structured_ocr.values()
+        for item in ocr_items
+    )
+    logger.info(f"OCR extracted {len(raw_text)} characters from {len(image_paths)} images.")
+
+    # Generate annotated OCR images
+    logger.info("Step 2b: Generating annotated OCR images...")
+    annotated_paths = generate_all_annotated_images(image_paths, structured_ocr)
+    logger.info(f"Generated {len(annotated_paths)} annotated images.")
+
+    # Step 3: Rule Engine (PRIMARY compliance checker)
+    logger.info("Step 3: Running Rule Engine (primary compliance checks)...")
+    initial_checks = run_compliance_checks(raw_text, barcode_results, structured_ocr)
+
+    # Step 4: AI Verification (OPTIONAL)
+    ai_used = False
+    if skip_ai or not is_ai_available():
+        reason = "skipped via UI toggle" if skip_ai else "AI not configured/disabled"
+        logger.info(f"Step 4: AI Verifier ({reason})")
+        checks = initial_checks
+        raw_response = f"AI Skipped ({reason}). Using local Rule Engine only."
     else:
-        logger.info("Step 2: Running AI vision analysis...")
-        extracted_data = await analyze_product_images(image_paths)
+        logger.info("Step 4: Sending to AI Verifier for second-pass...")
+        checks = await evaluate_with_ai(image_paths, raw_text, initial_checks)
+        raw_response = f"Verified by {settings.vision_model}."
+        ai_used = True
 
-        if "error" in extracted_data:
-            logger.error(f"Vision analysis error: {extracted_data['error']}")
-            # Create a minimal analysis record with the error
-            analysis = Analysis(
-                product_id=product_id,
-                ai_raw_response=json.dumps(extracted_data),
-                extracted_data=json.dumps(extracted_data),
-                compliance_score=0,
-                total_checks=0,
-                passed_checks=0,
-                failed_checks=0,
-                warning_checks=0,
-            )
-            db.add(analysis)
-            product.status = "pending"
-            await db.commit()
-
-            raise HTTPException(
-                status_code=502,
-                detail=f"AI vision analysis failed: {extracted_data['error']}",
-            )
-
-    # Update product name from AI extraction if not set
-    if not product.name and extracted_data.get("product_name"):
-        product.name = extracted_data["product_name"]
-
-    # Step 3: Run compliance checks
-    logger.info("Step 3: Running compliance checks...")
-    checks = run_compliance_checks(extracted_data, barcode_results)
     score_info = calculate_compliance_score(checks)
 
-    # Step 4: Store analysis results
-    logger.info("Step 4: Storing results...")
-    raw_response = extracted_data.pop("_raw_response", "")
+    # Step 5: Store analysis results
+    logger.info("Step 5: Storing results...")
 
-    # Save raw OCR output to a JSON file for the user, next to the uploaded images
-    ocr_output_path = settings.upload_dir / f"ocr_product_{product_id}.json"
+    # Save raw OCR output
+    ocr_output_path = settings.upload_dir / f"ocr_product_{product_id}.txt"
     with open(ocr_output_path, "w", encoding="utf-8") as f:
-        json.dump(extracted_data, f, indent=4, ensure_ascii=False)
+        f.write(raw_text)
+
+    # Save structured OCR JSON
+    ocr_json_path = settings.upload_dir / f"ocr_structured_{product_id}.json"
+    # Convert structured OCR for serialization (numpy arrays -> lists)
+    serializable_ocr = {}
+    for img_path, items in structured_ocr.items():
+        serializable_ocr[img_path] = [
+            {
+                "text": item["text"],
+                "confidence": item["confidence"],
+                "box": [[float(p[0]), float(p[1])] for p in item["box"]],
+            }
+            for item in items
+        ]
+    with open(ocr_json_path, "w", encoding="utf-8") as f:
+        json.dump(serializable_ocr, f, indent=2, ensure_ascii=False)
+
     logger.info(f"Saved OCR output to {ocr_output_path}")
+    logger.info(f"Saved structured OCR to {ocr_json_path}")
+
+    # Build pseudo extracted_data from checks
+    pseudo_extracted_data = {}
+    for c in checks:
+        pseudo_extracted_data[c["rule_id"]] = {
+            "status": c["status"],
+            "evidence": c.get("evidence"),
+            "details": c["details"]
+        }
+
+    # Store annotated image paths
+    annotated_paths_str = json.dumps(annotated_paths) if annotated_paths else None
 
     analysis = Analysis(
         product_id=product_id,
         ai_raw_response=raw_response,
-        extracted_data=json.dumps(extracted_data),
+        extracted_data=json.dumps(pseudo_extracted_data),
         compliance_score=score_info["score"],
         total_checks=score_info["total"],
         passed_checks=score_info["passed"],
         failed_checks=score_info["failed"],
         warning_checks=score_info["warnings"],
+        ocr_annotated_images=annotated_paths_str,
     )
     db.add(analysis)
     await db.flush()
@@ -151,7 +188,8 @@ async def analyze_product(
     await db.commit()
 
     logger.info(
-        f"Analysis complete: score={score_info['score']}%, status={score_info['status']}"
+        f"Analysis complete: score={score_info['score']}%, status={score_info['status']}, "
+        f"ai_used={ai_used}"
     )
 
     return AnalysisResponse(

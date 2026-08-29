@@ -59,6 +59,7 @@ def generate_report(
     checks: List[Dict],
     score_info: Dict,
     extracted_data: Dict,
+    annotated_image_paths: Optional[List[str]] = None,
 ) -> str:
     """
     Generate a PDF compliance report.
@@ -301,9 +302,41 @@ def generate_report(
     )
     elements.append(ext_table)
 
+    # ----- Annotated OCR Images -----
+    if annotated_image_paths:
+        elements.append(PageBreak())
+        elements.append(Paragraph("OCR Analysis — Annotated Images", section_style))
+        elements.append(
+            Paragraph(
+                '<font size="8" color="grey">'
+                "Color-coded bounding boxes show detected text regions. "
+                "Blue=Net Qty, Red=MRP, Orange=Dates, Green=Manufacturer, "
+                "Purple=FSSAI, Cyan=Nutritional, Pink=Ingredients."
+                "</font>",
+                styles["Normal"],
+            )
+        )
+        elements.append(Spacer(1, 8))
+
+        for ann_path in annotated_image_paths[:6]:
+            try:
+                if Path(ann_path).exists():
+                    img = RLImage(ann_path, width=16 * cm, height=11 * cm)
+                    img.hAlign = "CENTER"
+                    elements.append(img)
+                    elements.append(
+                        Paragraph(
+                            f'<font size="7" color="grey">{Path(ann_path).name}</font>',
+                            styles["Normal"],
+                        )
+                    )
+                    elements.append(Spacer(1, 8))
+            except Exception as e:
+                logger.warning(f"Could not add annotated image to report: {e}")
+
     # ----- Product Images -----
     elements.append(PageBreak())
-    elements.append(Paragraph("Product Images", section_style))
+    elements.append(Paragraph("Original Product Images", section_style))
 
     for img_path in image_paths[:6]:  # Max 6 images
         try:

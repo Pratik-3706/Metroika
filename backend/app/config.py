@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     aicredits_base_url: str = "https://aicredits.in/v1"
     vision_model: str = "moonshotai/kimi-k2.5"
 
+    # AI Toggle — automatically disabled when no real API key is set
+    ai_enabled: bool = True
+
+    # OCR Settings
+    ocr_confidence_threshold: float = 0.3  # Minimum confidence to keep a detection
+
     # Database
     database_url: str = "sqlite+aiosqlite:///./metroika.db"
 
@@ -31,6 +37,10 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Auto-disable AI if no real API key is configured
+if settings.aicredits_api_key in ("YOUR_API_KEY", "", None):
+    settings.ai_enabled = False
 
 # Ensure directories exist
 settings.upload_dir.mkdir(parents=True, exist_ok=True)

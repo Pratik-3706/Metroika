@@ -9,3 +9,10 @@ Pillow==11.1.0
 python-dotenv==1.0.1
 reportlab==4.2.5
 pydantic-settings==2.7.1
+qrcode==7.4.2
+
+# --- OCR Dependencies ---
+# Note: PaddlePaddle and PaddleOCR are installed dynamically via install_env.py
+# to automatically match the user's CUDA version or fallback to CPU.
+opencv-python==5.0.0.93
+numpy==2.2.6
