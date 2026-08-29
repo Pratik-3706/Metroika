@@ -79,29 +79,34 @@ def extract_structured_ocr(image_path: str) -> List[Dict]:
             # -----------------------------------------------------
             # Extract Barcodes and QR Codes with pyzbar
             # -----------------------------------------------------
-            import cv2
-            from pyzbar.pyzbar import decode
-            
-            img_cv2 = cv2.imread(image_path)
             barcode_detections = []
-            if img_cv2 is not None:
-                decoded_objects = decode(img_cv2)
-                for obj in decoded_objects:
-                    text_data = obj.data.decode("utf-8")
-                    rect = obj.rect
-                    box = [
-                        [rect.left, rect.top],
-                        [rect.left + rect.width, rect.top],
-                        [rect.left + rect.width, rect.top + rect.height],
-                        [rect.left, rect.top + rect.height]
-                    ]
-                    barcode_detections.append({
-                        "text": text_data,
-                        "confidence": 1.0,
-                        "box": box,
-                        "source": "pyzbar"
-                    })
-                all_detections.extend(barcode_detections)
+            try:
+                import cv2
+                from pyzbar.pyzbar import decode
+                
+                img_cv2 = cv2.imread(image_path)
+                if img_cv2 is not None:
+                    decoded_objects = decode(img_cv2)
+                    for obj in decoded_objects:
+                        text_data = obj.data.decode("utf-8")
+                        rect = obj.rect
+                        box = [
+                            [rect.left, rect.top],
+                            [rect.left + rect.width, rect.top],
+                            [rect.left + rect.width, rect.top + rect.height],
+                            [rect.left, rect.top + rect.height]
+                        ]
+                        barcode_detections.append({
+                            "text": text_data,
+                            "confidence": 1.0,
+                            "box": box,
+                            "source": "pyzbar"
+                        })
+                    all_detections.extend(barcode_detections)
+            except ImportError as e:
+                logger.warning(f"Barcode scanning skipped: pyzbar failed to load (likely missing Visual C++ Redistributable): {e}")
+            except Exception as e:
+                logger.warning(f"Barcode scanning failed: {e}")
                     
             # Find the saved image in the temp dir and move it to our final destination
             temp_files = os.listdir(temp_dir)
