@@ -20,13 +20,18 @@ HAS_OCR = False
 ocr_engine = None
 
 try:
+    # Disable PIR API and oneDNN to prevent C++ crashes on certain CPUs
+    os.environ["FLAGS_enable_pir_api"] = "0"
+    os.environ["FLAGS_use_mkldnn"] = "0"
+    
     from paddleocr import PaddleOCR
     
     # Initialize with orientation classification enabled to fix vertical text issues
     ocr_engine = PaddleOCR(
         use_textline_orientation=True,       # Enables character rotation classification
         use_doc_orientation_classify=True,   # Enables full document rotation classification
-        use_doc_unwarping=False
+        use_doc_unwarping=False,
+        enable_mkldnn=False                  # Disable oneDNN to avoid ConvertPirAttribute2RuntimeAttribute errors
     )
     HAS_OCR = True
     logger.info("PaddleOCR (v3.7) initialized successfully.")
