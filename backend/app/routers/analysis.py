@@ -143,14 +143,25 @@ async def analyze_product(
     logger.info(f"Saved OCR output to {ocr_output_path}")
     logger.info(f"Saved structured OCR to {ocr_json_path}")
 
-    # Build pseudo extracted_data from checks
+    # Map rule_ids to the flat keys expected by the frontend and PDF generator
+    key_map = {
+        "R6_1_A": "product_name",
+        "R6_1_B": "manufacturer_name",
+        "R6_1_C": "net_quantity",
+        "R6_1_D": "manufacture_date",
+        "R6_1_E": "mrp",
+        "R6_1_H": "consumer_care",
+        "FSSAI_1": "fssai_license",
+        "BB_1": "expiry_date",
+        "BATCH_1": "batch_number"
+    }
+
     pseudo_extracted_data = {}
     for c in checks:
-        pseudo_extracted_data[c["rule_id"]] = {
-            "status": c["status"],
-            "evidence": c.get("evidence"),
-            "details": c["details"]
-        }
+        if c["rule_id"] in key_map:
+            key = key_map[c["rule_id"]]
+            # The UI/PDF expects the raw string value (evidence), not a nested status object
+            pseudo_extracted_data[key] = c.get("evidence")
 
     # Store annotated image paths
     annotated_paths_str = json.dumps(annotated_paths) if annotated_paths else None
