@@ -309,7 +309,7 @@ def run_compliance_checks(
                 
                 for text_val in top_texts:
                     text_lower = text_val.lower()
-                    if any(kw in text_lower for kw in ["batch", "mfg", "exp", "mrp", "net", "price", "date"]):
+                    if any(kw in text_lower for kw in ["batch", "mfg", "exp", "mrp", "net", "price", "date", "instruction", "use", "direction", "warning", "caution"]):
                         continue
                     product_name_found = True
                     product_name_evidence = text_val
@@ -720,7 +720,10 @@ def run_compliance_checks(
     # Conditionally remove or mark rules based on category
     # Medicine exempt from standard MRP and Date Format (has strict DPCO/Drug rules)
     if category == "medicine":
-        checks = [c for c in checks if c["rule_id"] not in ["R6_1_E", "MRP_FMT", "DATE_FMT"]]
+        for c in checks:
+            if c["rule_id"] in ["R6_1_E", "MRP_FMT", "DATE_FMT"]:
+                c["status"] = "not_applicable"
+                c["details"] = "Exempt from standard metrology format; governed by DPCO/Drugs Rules."
     
     # Electronics don't have Expiry Dates or Batch necessarily
     if category == "electronics":
