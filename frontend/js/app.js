@@ -10,6 +10,7 @@ const App = {
         products: ProductsPage,
         report: ReportPage,
         rules: RulesPage,
+        settings: SettingsPage,
     },
 
     pageTitles: {
@@ -18,6 +19,7 @@ const App = {
         products: 'Products',
         report: 'Compliance Report',
         rules: 'Rules Reference',
+        settings: 'Settings',
     },
 
     init() {

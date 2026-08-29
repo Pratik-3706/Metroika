@@ -81,6 +81,12 @@ const API = {
         });
     },
 
+    async factoryReset() {
+        return this.request(`/api/products/factory_reset`, {
+            method: 'POST',
+        });
+    },
+
     // ----- Reports -----
     async generateReport(productId) {
         return this.request(`/api/products/${productId}/report`, {

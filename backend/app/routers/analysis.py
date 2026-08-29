@@ -254,9 +254,9 @@ async def clear_cache():
     
     deleted_files = 0
     
-    # Clear uploads dir
+    # Clear uploads dir (including subdirectories for generated files)
     for ext in ["*.txt", "*.json", "*_ocr_annotated.jpg", "*_ocr_annotated.jpeg", "*_ocr_annotated.png"]:
-        for file_path in settings.upload_dir.glob(ext):
+        for file_path in settings.upload_dir.rglob(ext):
             try:
                 os.remove(file_path)
                 deleted_files += 1
@@ -264,7 +264,7 @@ async def clear_cache():
                 logger.error(f"Failed to delete {file_path}: {e}")
                 
     # Clear reports dir
-    for file_path in settings.report_dir.glob("*.pdf"):
+    for file_path in settings.report_dir.rglob("*.pdf"):
         try:
             os.remove(file_path)
             deleted_files += 1
@@ -272,4 +272,46 @@ async def clear_cache():
             logger.error(f"Failed to delete {file_path}: {e}")
             
     return {"message": f"Successfully deleted {deleted_files} cached files.", "deleted_files": deleted_files}
+
+
+@router.post("/factory_reset")
+async def factory_reset():
+    """Wipes all files in uploads and reports directories, and drops/recreates all DB tables."""
+    import os
+    import shutil
+    from app.database import engine, Base
+    
+    # 1. Clear directories
+    try:
+        # Clear uploads
+        for item in settings.upload_dir.iterdir():
+            if item.name == ".gitkeep":
+                continue
+            if item.is_dir():
+                shutil.rmtree(item)
+            else:
+                os.remove(item)
+                
+        # Clear reports
+        for item in settings.report_dir.iterdir():
+            if item.name == ".gitkeep":
+                continue
+            if item.is_dir():
+                shutil.rmtree(item)
+            else:
+                os.remove(item)
+    except Exception as e:
+        logger.error(f"Failed to clear directories during factory reset: {e}")
+        raise HTTPException(status_code=500, detail="Failed to clear directories.")
+        
+    # 2. Reset Database (Drop and Create)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        logger.error(f"Failed to reset database: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reset database.")
+        
+    return {"message": "Factory reset complete. Database and files have been wiped."}
 
