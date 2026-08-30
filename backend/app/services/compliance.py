@@ -381,28 +381,28 @@ def run_compliance_checks(
     # -----------------------------------------------------------------------
     # 4. Manufacture / Packing Date (R6_1_D)
     # -----------------------------------------------------------------------
-    found, val = _search_text(raw_text, "manufacture_date")
-    if not found:
+    found_mfg, mfg_val = _search_text(raw_text, "manufacture_date")
+    if not found_mfg:
         # Fallback: look for date-like patterns near keywords
         fallback = re.search(
             r"(?:Mfg|Mfd|Pkd|Pkdt)[\s:.]*(\d{1,2}[\s/\-.]?\d{1,2}[\s/\-.]?\d{2,4})",
             raw_text, re.IGNORECASE
         )
         if fallback:
-            found = True
-            val = fallback.group(1).strip()
+            found_mfg = True
+            mfg_val = fallback.group(1).strip()
         elif all_raw_dates:
             # Aggressive fallback: assume the first raw date in the document is the manufacturing/packing date
-            found = True
-            val = all_raw_dates[0] + " (inferred)"
+            found_mfg = True
+            mfg_val = all_raw_dates[0] + " (inferred)"
 
     checks.append({
         "rule_id": "R6_1_D",
         "rule_name": "Manufacture / Packing Date",
         "rule_reference": "Rule 6(1)(d)",
-        "status": "pass" if found else "fail",
-        "details": f"Found: {val}" if found else "Manufacture/packing date not found on package.",
-        "evidence": val if found else None,
+        "status": "pass" if found_mfg else "fail",
+        "details": f"Found: {mfg_val}" if found_mfg else "Manufacture/packing date not found on package.",
+        "evidence": mfg_val if found_mfg else None,
         "severity": "high",
     })
 
@@ -512,8 +512,19 @@ def run_compliance_checks(
     # -----------------------------------------------------------------------
     found_ing, ing_val = _search_text(raw_text, "ingredients")
     if not found_ing:
-        # Fallback check for the keyword alone
-        found_ing = bool(re.search(r"ingredients?\s*[:.]", raw_text, re.IGNORECASE))
+        # Fallback: look for the keyword and grab whatever follows it
+        ing_fallback = re.search(
+            r"ingredients?\s*[:.]\s*(.{10,200})",
+            raw_text, re.IGNORECASE
+        )
+        if ing_fallback:
+            found_ing = True
+            ing_val = ing_fallback.group(1).strip()
+        else:
+            # Last resort: just check if the keyword exists at all
+            found_ing = bool(re.search(r"ingredients?\s*[:.]", raw_text, re.IGNORECASE))
+            if found_ing:
+                ing_val = "Ingredients section detected (text not fully extracted)"
 
     checks.append({
         "rule_id": "ING_1",
@@ -522,7 +533,7 @@ def run_compliance_checks(
         "status": "pass" if found_ing else "fail",
         "details": "Ingredients section found." if found_ing
                    else "Ingredients list not found on package.",
-        "evidence": ing_val[:100] if found_ing and ing_val else None,
+        "evidence": ing_val[:200] if found_ing and ing_val else None,
         "severity": "medium",
     })
 
@@ -536,6 +547,18 @@ def run_compliance_checks(
 
     nut_found = found_nut or found_energy or found_protein
 
+    # Build evidence for nutritional info
+    nut_evidence = None
+    if found_nut:
+        nut_evidence = nut_val if nut_val else "Nutritional information section detected"
+    elif found_energy or found_protein:
+        parts = []
+        if found_energy:
+            parts.append("Energy values detected")
+        if found_protein:
+            parts.append("Protein values detected")
+        nut_evidence = "; ".join(parts)
+
     checks.append({
         "rule_id": "NUT_1",
         "rule_name": "Nutritional Information",
@@ -543,7 +566,7 @@ def run_compliance_checks(
         "status": "pass" if nut_found else "fail",
         "details": "Nutritional information section found." if nut_found
                    else "Nutritional information not found on package.",
-        "evidence": nut_val if found_nut else None,
+        "evidence": nut_evidence,
         "severity": "medium",
     })
 
@@ -556,8 +579,8 @@ def run_compliance_checks(
             # If multiple dates exist, assume the last one is the expiry/best before
             found_bb = True
             bb_val = all_raw_dates[-1] + " (inferred)"
-        elif len(all_raw_dates) == 1 and not found:
-            # If only one date exists and wasn't used for Mfg
+        elif len(all_raw_dates) == 1 and not found_mfg:
+            # If only one date exists and wasn't used for Mfg date
             found_bb = True
             bb_val = all_raw_dates[0] + " (inferred)"
 
@@ -633,6 +656,15 @@ def run_compliance_checks(
     # 14. Storage Instructions
     # -----------------------------------------------------------------------
     found_storage, storage_val = _search_text(raw_text, "storage")
+    if not found_storage:
+        # Broader fallback for storage instructions
+        storage_fb = re.search(
+            r"(?:Store|Keep|Storage)[\s].*?(?:\.|$)",
+            raw_text, re.IGNORECASE
+        )
+        if storage_fb:
+            found_storage = True
+            storage_val = storage_fb.group(0).strip()[:150]
 
     checks.append({
         "rule_id": "STOR_1",
@@ -682,6 +714,28 @@ def run_compliance_checks(
         "details": "Assumed compliant (requires visual inspection).",
         "evidence": None,
         "severity": LANGUAGE_RULE["severity"],
+    })
+
+    # -----------------------------------------------------------------------
+    # 17b. Country of Origin (COO_1)
+    # -----------------------------------------------------------------------
+    found_coo, coo_val = _search_text(raw_text, "country_of_origin")
+    if found_coo:
+        # Clean up: strip trailing junk
+        coo_val = re.sub(r"[^A-Za-z\s]", "", coo_val).strip()
+        if len(coo_val) < 2:
+            found_coo = False
+            coo_val = ""
+
+    checks.append({
+        "rule_id": "COO_1",
+        "rule_name": "Country of Origin",
+        "rule_reference": "Rule 6(1) / FSSAI",
+        "status": "pass" if found_coo else "warning",
+        "details": f"Found: {coo_val}" if found_coo
+                   else "Country of origin not explicitly found on package.",
+        "evidence": coo_val if found_coo else None,
+        "severity": "medium",
     })
 
     # -----------------------------------------------------------------------

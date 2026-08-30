@@ -296,6 +296,11 @@ def generate_report(
         ("Country of Origin", extracted_data.get("country_of_origin")),
         ("FSSAI License", extracted_data.get("fssai_license")),
         ("Batch Number", extracted_data.get("batch_number")),
+        ("Ingredients", extracted_data.get("ingredients")),
+        ("Allergens", extracted_data.get("allergens")),
+        ("Nutritional Info", extracted_data.get("nutritional_info")),
+        ("Storage Instructions", extracted_data.get("storage_instructions")),
+        ("Veg / Non-Veg", extracted_data.get("veg_nonveg")),
     ]
     ext_rows = []
     for label, value in key_fields:

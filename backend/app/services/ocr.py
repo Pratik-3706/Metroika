@@ -26,17 +26,23 @@ try:
     os.environ["OMP_NUM_THREADS"] = "4"
     
     from paddleocr import PaddleOCR
+    import paddle
+    
+    # Auto-detect GPU
+    use_gpu = paddle.device.is_compiled_with_cuda() and paddle.device.cuda.device_count() > 0
+    device = "gpu" if use_gpu else "cpu"
     
     # Initialize with orientation classification enabled to fix vertical text issues
     ocr_engine = PaddleOCR(
         use_textline_orientation=True,       # Enables character/line rotation classification (keep this)
-        use_doc_orientation_classify=False,  # Disable full document rotation as it incorrectly flips packaging images
+        use_doc_orientation_classify=False,   # Disable full document rotation as it incorrectly flips packaging images
         use_doc_unwarping=False,
+        device=device,                       # Use GPU when available for ~5-10x speedup
         enable_mkldnn=False,                 # MUST be False to prevent PIR array attribute crash
-        cpu_threads=4                        # Limit math threads to prevent the 5+ minute hang
+        cpu_threads=4                        # Limit math threads to prevent the 5+ minute hang (CPU fallback)
     )
     HAS_OCR = True
-    logger.info("PaddleOCR (v3.7) initialized successfully.")
+    logger.info(f"PaddleOCR (v3.7) initialized successfully on {device.upper()}.")
 except ImportError:
     logger.warning("PaddleOCR not installed. OCR features will be unavailable.")
 except Exception as e:
@@ -111,7 +117,7 @@ def extract_structured_ocr(image_path: str) -> List[Dict]:
                         })
                     all_detections.extend(barcode_detections)
             except ImportError as e:
-                logger.warning(f"Barcode scanning skipped: pyzbar failed to load (likely missing Visual C++ Redistributable): {e}")
+                logger.warning(f"Barcode scanning skipped: pyzbar failed to load (likely missing Visual C++ Redistributable on Windows or libzbar0 on Linux): {e}")
             except Exception as e:
                 logger.warning(f"Barcode scanning failed: {e}")
                     

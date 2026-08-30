@@ -127,6 +127,10 @@ const ReportPage = {
                             ${this._renderExtractedField('FSSAI License', extracted['fssai_license'])}
                             ${this._renderExtractedField('Ingredients', extracted['ingredients'])}
                             ${this._renderExtractedField('Allergens', extracted['allergens'])}
+                            ${this._renderExtractedField('Country of Origin', extracted['country_of_origin'])}
+                            ${this._renderExtractedField('Nutritional Info', extracted['nutritional_info'])}
+                            ${this._renderExtractedField('Storage', extracted['storage_instructions'])}
+                            ${this._renderExtractedField('Veg / Non-Veg', extracted['veg_nonveg'])}
                             ${this._renderExtractedField('Barcode/QR', extracted['barcode'])}
                         </dl>
                     </div>

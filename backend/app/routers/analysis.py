@@ -160,7 +160,11 @@ async def analyze_product(
         "BATCH_1": "batch_number",
         "ING_1": "ingredients",
         "ALLRG_1": "allergens",
-        "BARCODE": "barcode"
+        "BARCODE": "barcode",
+        "NUT_1": "nutritional_info",
+        "STOR_1": "storage_instructions",
+        "COO_1": "country_of_origin",
+        "VEG_1": "veg_nonveg",
     }
 
     pseudo_extracted_data = {"detected_category": detected_category}
