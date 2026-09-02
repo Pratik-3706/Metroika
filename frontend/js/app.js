@@ -59,22 +59,22 @@ const App = {
         this.applyTheme(isDark, sunIcon, moonIcon);
 
         toggleBtn.addEventListener('click', () => {
-            const currentlyDark = document.documentElement.classList.contains('dark');
+            const currentlyDark = document.documentElement.getAttribute('data-theme') === 'dark';
             this.applyTheme(!currentlyDark, sunIcon, moonIcon);
         });
     },
 
     applyTheme(isDark, sunIcon, moonIcon) {
         if (isDark) {
-            document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
             localStorage.setItem('metroika-theme', 'dark');
-            sunIcon.classList.remove('hidden');
-            moonIcon.classList.add('hidden');
+            if (sunIcon) sunIcon.style.display = 'block';
+            if (moonIcon) moonIcon.style.display = 'none';
         } else {
-            document.documentElement.classList.remove('dark');
+            document.documentElement.removeAttribute('data-theme');
             localStorage.setItem('metroika-theme', 'light');
-            sunIcon.classList.add('hidden');
-            moonIcon.classList.remove('hidden');
+            if (sunIcon) sunIcon.style.display = 'none';
+            if (moonIcon) moonIcon.style.display = 'block';
         }
 
         // Trigger chart redraw if they exist
@@ -112,7 +112,7 @@ const App = {
             this.currentPage = PageHandler;
             const contentEl = document.getElementById('page-content');
             contentEl.innerHTML = '';
-            contentEl.className = 'flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 page-enter';
+            contentEl.className = 'page-content page-enter';
 
             if (typeof PageHandler.mount === 'function') {
                 PageHandler.mount(contentEl, pageParam);
