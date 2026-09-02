@@ -112,7 +112,7 @@ const App = {
             this.currentPage = PageHandler;
             const contentEl = document.getElementById('page-content');
             contentEl.innerHTML = '';
-            contentEl.className = 'page-content page-enter';
+            contentEl.className = 'flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 page-enter';
 
             if (typeof PageHandler.mount === 'function') {
                 PageHandler.mount(contentEl, pageParam);
