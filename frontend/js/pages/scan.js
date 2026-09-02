@@ -15,30 +15,30 @@ const ScanPage = {
                 <h2 class="section-title">Scan Packaged Commodity</h2>
             </div>
 
-            <div class="grid-2">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Left: Upload & Controls -->
                 <div>
                     <div class="card mb-6">
-                        <div class="card-header">
-                            <div class="card-title">Product Images</div>
-                            <div class="card-subtitle">Upload multiple views of the product label</div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="text-lg font-semibold text-gray-900 dark:text-white">Product Images</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Upload multiple views of the product label</div>
                         </div>
                         ${ImageUploader.render('scan-upload')}
                     </div>
 
                     <div class="card mb-6">
-                        <div class="card-header">
-                            <div class="card-title">Analysis Settings</div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="text-lg font-semibold text-gray-900 dark:text-white">Analysis Settings</div>
                         </div>
-                        <div class="form-group" style="margin-bottom: 16px;">
+                        <div class="mb-4" style="margin-bottom: 16px;">
                             <label style="display: block; font-size: 13px; margin-bottom: 4px; font-weight: 500;">Product Name (Optional)</label>
                             <input type="text" class="form-input" id="product-name-input"
                                    placeholder="e.g., Parle-G Gold Biscuits 200g">
                         </div>
                         
-                        <div class="form-group" style="margin-bottom: 16px;">
+                        <div class="mb-4" style="margin-bottom: 16px;">
                             <label style="display: block; font-size: 13px; margin-bottom: 4px; font-weight: 500;">Product Category (Optional)</label>
-                            <select id="scan-category-select" class="form-control" style="width: 100%;">
+                            <select id="scan-category-select" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-gray-700 dark:text-white px-3 py-2 border" style="width: 100%;">
                                 <option value="auto">Auto-Detect Type</option>
                                 <option value="general">General Goods</option>
                                 <option value="food">Food & Edibles</option>
@@ -49,7 +49,7 @@ const ScanPage = {
                             </select>
                         </div>
                         
-                        <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
+                        <div class="mb-4" style="margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
                             <input type="checkbox" id="skip-ai-toggle" style="width: 16px; height: 16px;">
                             <label for="skip-ai-toggle" style="margin: 0; font-weight: 500; cursor: pointer;">
                                 Bypass AI Verifier (Save API Credits / Fast Mode)
@@ -58,10 +58,10 @@ const ScanPage = {
                     </div>
 
                     <div style="display: flex; gap: 12px; margin-bottom: 24px;">
-                        <button class="btn btn-outline btn-lg" id="clear-btn" style="flex: 1;">
+                        <button class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg transition-colors btn-lg" id="clear-btn" style="flex: 1;">
                             Clear Form
                         </button>
-                        <button class="btn btn-primary btn-lg" id="analyze-btn" style="flex: 2;">
+                        <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors btn-lg" id="analyze-btn" style="flex: 2;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                                 <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
                                 <circle cx="12" cy="13" r="4"/>
@@ -94,8 +94,8 @@ const ScanPage = {
 
                 <!-- Right: Results -->
                 <div id="results-panel">
-                    <div class="card">
-                        <div class="empty-state">
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                        <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>
@@ -138,8 +138,8 @@ const ScanPage = {
         // Clear the results panel on the right side while the new scan runs
         if (resultsPanel) {
             resultsPanel.innerHTML = `
-                <div class="card">
-                    <div class="empty-state">
+                <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                    <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                             <polyline points="14 2 14 8 20 8"/>
@@ -269,21 +269,21 @@ const ScanPage = {
                     </span>
                 </div>
                 <div style="text-align: center; margin-top: 16px; display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn btn-success btn-sm" id="generate-report-btn">
+                    <button class="btn btn-success px-3 py-1.5 text-xs" id="generate-report-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                             <polyline points="14 2 14 8 20 8"/>
                         </svg>
                         Generate PDF Report
                     </button>
-                    <a href="#report/${productId}" class="btn btn-outline btn-sm">View Details</a>
+                    <a href="#report/${productId}" class="btn btn-outline px-3 py-1.5 text-xs">View Details</a>
                 </div>
             </div>
             ${this._renderAnnotatedImages(analysis)}
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">Compliance Checks</div>
-                    <div class="card-subtitle">${checks.length} checks performed</div>
+            <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white">Compliance Checks</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">${checks.length} checks performed</div>
                 </div>
                 ${ComplianceCard.renderCheckList(checks)}
             </div>
@@ -335,9 +335,9 @@ const ScanPage = {
 
         return `
             <div class="card mb-6">
-                <div class="card-header">
-                    <div class="card-title">🔍 OCR Analysis — Annotated Output</div>
-                    <div class="card-subtitle">Color-coded bounding boxes show detected text</div>
+                <div class="flex justify-between items-start mb-4">
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white">🔍 OCR Analysis — Annotated Output</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Color-coded bounding boxes show detected text</div>
                 </div>
                 <div style="padding: 0 16px 8px;">
                     <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; font-size: 10px;">

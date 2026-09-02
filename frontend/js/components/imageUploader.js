@@ -12,20 +12,20 @@ const ImageUploader = {
 
     render(containerId) {
         return `
-            <div class="upload-zone" id="${containerId}-zone">
-                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" id="${containerId}-zone">
+                <svg class="mx-auto h-12 w-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
                     <polyline points="17 8 12 3 7 8"/>
                     <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
-                <div class="upload-text">Drop product images here or click to browse</div>
-                <div class="upload-hint">
+                <div class="mt-4 text-sm font-medium text-gray-900 dark:text-white">Drop product images here or click to browse</div>
+                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Upload multiple images (front, back, side labels) · JPG, PNG, WebP · Max 10MB each
                 </div>
                 <input type="file" id="${containerId}-input" multiple accept="image/*" 
                        style="display:none">
             </div>
-            <div class="image-preview-grid" id="${containerId}-preview"></div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4" id="${containerId}-preview"></div>
         `;
     },
 
@@ -85,10 +85,10 @@ const ImageUploader = {
         preview.innerHTML = this.files.map((file, idx) => {
             const url = URL.createObjectURL(file);
             return `
-                <div class="image-preview-item" data-idx="${idx}">
+                <div class="relative group rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700" data-idx="${idx}">
                     <img src="${url}" alt="${this.labels[idx]}">
-                    <div class="label-tag">${this.labels[idx]}</div>
-                    <button class="remove-btn" data-idx="${idx}" title="Remove">&times;</button>
+                    <div class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs text-center py-1">${this.labels[idx]}</div>
+                    <button class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" data-idx="${idx}" title="Remove">&times;</button>
                 </div>
             `;
         }).join('');

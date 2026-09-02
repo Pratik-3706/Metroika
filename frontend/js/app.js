@@ -120,10 +120,10 @@ const App = {
         } else {
             // 404 fallback
             document.getElementById('page-content').innerHTML = `
-                <div class="empty-state">
+                <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
                     <h3>Page not found</h3>
                     <p>The page "${pageName}" doesn't exist.</p>
-                    <a href="#dashboard" class="btn btn-primary mt-4">Go to Dashboard</a>
+                    <a href="#dashboard" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors mt-4">Go to Dashboard</a>
                 </div>
             `;
         }

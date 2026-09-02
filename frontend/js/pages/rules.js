@@ -15,10 +15,10 @@ const RulesPage = {
 
             <!-- Font Size Requirements -->
             <div class="card mb-6">
-                <div class="card-header">
+                <div class="flex justify-between items-start mb-4">
                     <div>
-                        <div class="card-title">Font Size Requirements — Rule 7 (Table I)</div>
-                        <div class="card-subtitle">
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">Font Size Requirements — Rule 7 (Table I)</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
                             Minimum height of numerals and letters based on Principal Display Panel area
                         </div>
                     </div>
@@ -58,10 +58,10 @@ const RulesPage = {
 
             <!-- MRP Format -->
             <div class="card mb-6">
-                <div class="card-header">
+                <div class="flex justify-between items-start mb-4">
                     <div>
-                        <div class="card-title">MRP Declaration Format — Rule 6(1)(e)</div>
-                        <div class="card-subtitle">Maximum Retail Price format requirements</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">MRP Declaration Format — Rule 6(1)(e)</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Maximum Retail Price format requirements</div>
                     </div>
                 </div>
                 <div style="padding: 16px 0;">
@@ -85,21 +85,21 @@ const RulesPage = {
 
             <!-- All Compliance Rules -->
             <div class="card mb-6">
-                <div class="card-header">
+                <div class="flex justify-between items-start mb-4">
                     <div>
-                        <div class="card-title">Mandatory Declarations — Rule 6</div>
-                        <div class="card-subtitle">All mandatory declarations checked by Metroika</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">Mandatory Declarations — Rule 6</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">All mandatory declarations checked by Metroika</div>
                     </div>
                 </div>
             </div>
 
             <div class="rules-grid">
                 ${this._getRules().map(rule => `
-                    <div class="rule-card">
-                        <div class="rule-id">${rule.id}</div>
-                        <div class="rule-title">${rule.name}</div>
+                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div class="font-mono text-sm text-blue-600 dark:text-blue-400 font-semibold">${rule.id}</div>
+                        <div class="font-medium text-gray-900 dark:text-white">${rule.name}</div>
                         <div class="rule-ref">${rule.reference}</div>
-                        <div class="rule-desc">${rule.description}</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-2">${rule.description}</div>
                         <div style="margin-top: 10px;">
                             <span class="check-severity ${rule.severity}">${rule.severity}</span>
                         </div>
@@ -109,10 +109,10 @@ const RulesPage = {
 
             <!-- Additional Info -->
             <div class="card mt-6">
-                <div class="card-header">
+                <div class="flex justify-between items-start mb-4">
                     <div>
-                        <div class="card-title">Key Amendments (2024–2026)</div>
-                        <div class="card-subtitle">Recent updates to the rules</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">Key Amendments (2024–2026)</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Recent updates to the rules</div>
                     </div>
                 </div>
                 <ul style="list-style: disc; padding-left: 20px; color: var(--text-secondary); font-size: 0.85rem; line-height: 2;">

@@ -11,11 +11,11 @@ const ComplianceCard = {
 
     renderCheckList(checks) {
         if (!checks || checks.length === 0) {
-            return '<p class="text-muted text-sm">No compliance checks available.</p>';
+            return '<p class="text-sm text-gray-500 dark:text-gray-400">No compliance checks available.</p>';
         }
 
         return `
-            <div class="check-list">
+            <div class="space-y-4">
                 ${checks.map(c => this.renderCheckItem(c)).join('')}
             </div>
         `;
@@ -24,13 +24,13 @@ const ComplianceCard = {
     renderCheckItem(check) {
         const icon = this.statusIcons[check.status] || '?';
         return `
-            <div class="check-item">
+            <div class="flex gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
                 <div class="check-icon ${check.status}">${icon}</div>
                 <div class="check-content">
-                    <div class="check-title">${check.rule_name}</div>
-                    <div class="check-reference">${check.rule_reference}</div>
-                    <div class="check-details">${check.details}</div>
-                    ${check.evidence ? `<div class="check-evidence">Evidence: ${check.evidence}</div>` : ''}
+                    <div class="font-medium text-gray-900 dark:text-white text-sm">${check.rule_name}</div>
+                    <div class="text-xs text-gray-500 font-mono mt-0.5">${check.rule_reference}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 mt-1">${check.details}</div>
+                    ${check.evidence ? `<div class="text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded mt-2 text-gray-500 dark:text-gray-400">Evidence: ${check.evidence}</div>` : ''}
                 </div>
                 <span class="check-severity ${check.severity}">${check.severity}</span>
             </div>
