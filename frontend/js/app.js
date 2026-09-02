@@ -59,22 +59,22 @@ const App = {
         this.applyTheme(isDark, sunIcon, moonIcon);
 
         toggleBtn.addEventListener('click', () => {
-            const currentlyDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const currentlyDark = document.documentElement.classList.contains('dark');
             this.applyTheme(!currentlyDark, sunIcon, moonIcon);
         });
     },
 
     applyTheme(isDark, sunIcon, moonIcon) {
         if (isDark) {
-            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.classList.add('dark');
             localStorage.setItem('metroika-theme', 'dark');
-            sunIcon.style.display = 'block';
-            moonIcon.style.display = 'none';
+            sunIcon.classList.remove('hidden');
+            moonIcon.classList.add('hidden');
         } else {
-            document.documentElement.removeAttribute('data-theme');
+            document.documentElement.classList.remove('dark');
             localStorage.setItem('metroika-theme', 'light');
-            sunIcon.style.display = 'none';
-            moonIcon.style.display = 'block';
+            sunIcon.classList.add('hidden');
+            moonIcon.classList.remove('hidden');
         }
 
         // Trigger chart redraw if they exist
