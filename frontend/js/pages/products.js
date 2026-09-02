@@ -13,24 +13,24 @@ const ProductsPage = {
                         </svg>
                         <input type="text" class="form-input" id="product-search" placeholder="Search products...">
                     </div>
-                    <select class="form-input" id="status-filter" style="width: 160px;">
+                    <select class="form-input" id="status-filter" style="width: 140px;">
                         <option value="">All Statuses</option>
                         <option value="compliant">Compliant</option>
                         <option value="non_compliant">Non-Compliant</option>
                         <option value="warning">Warnings</option>
                         <option value="pending">Pending</option>
                     </select>
-                    <a href="#scan" class="btn btn-primary px-3 py-1.5 text-xs">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <a href="#scan" class="btn btn-primary btn-sm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                         </svg>
                         New Scan
                     </a>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+            <div class="card">
                 <div id="products-list">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+                    <p class="text-muted text-sm">Loading...</p>
                 </div>
             </div>
         `;
@@ -60,7 +60,7 @@ const ProductsPage = {
         } catch (error) {
             console.error('Failed to load products:', error);
             document.getElementById('products-list').innerHTML = `
-                <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <div class="empty-state">
                     <h3>Could not load products</h3>
                     <p>${error.message}</p>
                 </div>
@@ -74,7 +74,7 @@ const ProductsPage = {
 
         if (products.length === 0) {
             el.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <div class="empty-state">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                         <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
                     </svg>
@@ -86,7 +86,7 @@ const ProductsPage = {
         }
 
         el.innerHTML = `
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 w-full text-left border-collapse">
+            <table class="data-table">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -102,15 +102,15 @@ const ProductsPage = {
                     ${products.map(p => `
                         <tr>
                             <td class="text-mono text-muted">#${p.id}</td>
-                            <td class="font-medium text-gray-900 dark:text-white">${p.name || 'Unnamed Product'}</td>
+                            <td class="product-name">${p.name || 'Unnamed Product'}</td>
                             <td class="text-mono text-sm text-muted">${p.barcode_data || '—'}</td>
                             <td>${ComplianceCard.renderStatusBadge(p.status)}</td>
-                            <td class="text-gray-500 dark:text-gray-400">${p.image_count}</td>
-                            <td class="text-sm text-gray-500 dark:text-gray-400">${new Date(p.created_at).toLocaleDateString()}</td>
+                            <td class="text-muted">${p.image_count}</td>
+                            <td class="text-muted text-sm">${new Date(p.created_at).toLocaleDateString()}</td>
                             <td>
                                 <div class="flex gap-3">
-                                    <button class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg transition-colors px-3 py-1.5 text-xs" onclick="location.hash='report/${p.id}'">View</button>
-                                    <button class="inline-flex items-center justify-center gap-2 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg transition-colors px-3 py-1.5 text-xs" style="color: var(--danger);" onclick="ProductsPage._deleteProduct(${p.id})">Delete</button>
+                                    <button class="btn btn-outline btn-sm" onclick="location.hash='report/${p.id}'">View</button>
+                                    <button class="btn btn-sm" style="color: var(--danger);" onclick="ProductsPage._deleteProduct(${p.id})">Delete</button>
                                 </div>
                             </td>
                         </tr>

@@ -15,30 +15,32 @@ const ScanPage = {
                 <h2 class="section-title">Scan Packaged Commodity</h2>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid-2">
                 <!-- Left: Upload & Controls -->
                 <div>
                     <div class="card mb-6">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="text-lg font-semibold text-gray-900 dark:text-white">Product Images</div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">Upload multiple views of the product label</div>
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Product Images</div>
+                                <div class="card-subtitle">Upload multiple views of the product label</div>
+                            </div>
                         </div>
                         ${ImageUploader.render('scan-upload')}
                     </div>
 
                     <div class="card mb-6">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="text-lg font-semibold text-gray-900 dark:text-white">Analysis Settings</div>
+                        <div class="card-header">
+                            <div class="card-title">Analysis Settings</div>
                         </div>
-                        <div class="mb-4" style="margin-bottom: 16px;">
-                            <label style="display: block; font-size: 13px; margin-bottom: 4px; font-weight: 500;">Product Name (Optional)</label>
+                        <div class="form-group" style="margin-bottom: 14px;">
+                            <label class="form-label">Product Name (Optional)</label>
                             <input type="text" class="form-input" id="product-name-input"
                                    placeholder="e.g., Parle-G Gold Biscuits 200g">
                         </div>
                         
-                        <div class="mb-4" style="margin-bottom: 16px;">
-                            <label style="display: block; font-size: 13px; margin-bottom: 4px; font-weight: 500;">Product Category (Optional)</label>
-                            <select id="scan-category-select" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-gray-700 dark:text-white px-3 py-2 border" style="width: 100%;">
+                        <div class="form-group" style="margin-bottom: 14px;">
+                            <label class="form-label">Product Category (Optional)</label>
+                            <select id="scan-category-select" class="form-control">
                                 <option value="auto">Auto-Detect Type</option>
                                 <option value="general">General Goods</option>
                                 <option value="food">Food & Edibles</option>
@@ -49,20 +51,20 @@ const ScanPage = {
                             </select>
                         </div>
                         
-                        <div class="mb-4" style="margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" id="skip-ai-toggle" style="width: 16px; height: 16px;">
-                            <label for="skip-ai-toggle" style="margin: 0; font-weight: 500; cursor: pointer;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="skip-ai-toggle" style="width: 14px; height: 14px; accent-color: var(--accent);">
+                            <label for="skip-ai-toggle" style="margin: 0; font-size: 0.82rem; font-weight: 500; cursor: pointer; color: var(--text-secondary);">
                                 Bypass AI Verifier (Save API Credits / Fast Mode)
                             </label>
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 12px; margin-bottom: 24px;">
-                        <button class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg transition-colors btn-lg" id="clear-btn" style="flex: 1;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button class="btn btn-outline btn-lg" id="clear-btn" style="flex: 1;">
                             Clear Form
                         </button>
-                        <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors btn-lg" id="analyze-btn" style="flex: 2;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <button class="btn btn-primary btn-lg" id="analyze-btn" style="flex: 2;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                                 <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
                                 <circle cx="12" cy="13" r="4"/>
                             </svg>
@@ -94,8 +96,8 @@ const ScanPage = {
 
                 <!-- Right: Results -->
                 <div id="results-panel">
-                    <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5 border border-gray-100 dark:border-gray-700">
-                        <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                    <div class="card">
+                        <div class="empty-state">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>
@@ -138,8 +140,8 @@ const ScanPage = {
         // Clear the results panel on the right side while the new scan runs
         if (resultsPanel) {
             resultsPanel.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5 border border-gray-100 dark:border-gray-700">
-                    <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <div class="card">
+                    <div class="empty-state">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                             <polyline points="14 2 14 8 20 8"/>
@@ -216,7 +218,7 @@ const ScanPage = {
         } finally {
             btn.disabled = false;
             btn.innerHTML = `
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                     <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
                     <circle cx="12" cy="13" r="4"/>
                 </svg>
@@ -256,34 +258,34 @@ const ScanPage = {
 
         panel.innerHTML = `
             ${skipAi ? `
-            <div style="background-color: rgba(255, 193, 7, 0.1); color: #ffb800; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid rgba(255, 193, 7, 0.3);">
-                <strong>⚠️ AI Evaluator Bypassed</strong><br>
+            <div style="background: var(--warning-bg); color: var(--warning); padding: 14px; border-radius: var(--radius-md); margin-bottom: 14px; border: 1px solid var(--warning-border); font-size: 0.82rem; line-height: 1.5;">
+                <strong>⚠ AI Evaluator Bypassed</strong><br>
                 This score was generated purely by the local OCR and Regex Rule Engine. The AI verifier was skipped, meaning any text missed by OCR (due to curved bottles, bad lighting, etc.) was not double-checked or corrected.
             </div>` : ''}
             <div class="card mb-6">
                 ${ComplianceCard.renderScoreCircle(result.compliance_score, result.status)}
-                <div style="text-align: center; margin-top: 12px;">
-                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                <div style="text-align: center; margin-top: 10px;">
+                    <span class="text-sm text-muted">
                         ${result.passed} passed · ${result.failed} failed · ${result.warnings} warnings
                         of ${result.total_checks} checks
                     </span>
                 </div>
-                <div style="text-align: center; margin-top: 16px; display: flex; gap: 8px; justify-content: center;">
-                    <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors px-3 py-1.5 text-xs" id="generate-report-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <div style="text-align: center; margin-top: 14px; display: flex; gap: 8px; justify-content: center;">
+                    <button class="btn btn-success btn-sm" id="generate-report-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                             <polyline points="14 2 14 8 20 8"/>
                         </svg>
                         Generate PDF Report
                     </button>
-                    <a href="#report/${productId}" class="btn btn-outline px-3 py-1.5 text-xs">View Details</a>
+                    <a href="#report/${productId}" class="btn btn-outline btn-sm">View Details</a>
                 </div>
             </div>
             ${this._renderAnnotatedImages(analysis)}
-            <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5 border border-gray-100 dark:border-gray-700">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="text-lg font-semibold text-gray-900 dark:text-white">Compliance Checks</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">${checks.length} checks performed</div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Compliance Checks</div>
+                    <div class="card-subtitle">${checks.length} checks performed</div>
                 </div>
                 ${ComplianceCard.renderCheckList(checks)}
             </div>
@@ -303,7 +305,7 @@ const ScanPage = {
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                         <polyline points="14 2 14 8 20 8"/>
                     </svg>
@@ -330,26 +332,26 @@ const ScanPage = {
             const uploadsIdx = normalized.indexOf('uploads/');
             const relativePath = uploadsIdx >= 0 ? normalized.substring(uploadsIdx) : normalized;
             const url = `${API.BASE_URL.replace('/api', '')}/${relativePath}`;
-            return `<img src="${url}" alt="OCR Annotated" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;">`;
+            return `<img src="${url}" alt="OCR Annotated" style="max-width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 8px;">`;
         }).join('');
 
         return `
             <div class="card mb-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="text-lg font-semibold text-gray-900 dark:text-white">🔍 OCR Analysis — Annotated Output</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">Color-coded bounding boxes show detected text</div>
-                </div>
-                <div style="padding: 0 16px 8px;">
-                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; font-size: 10px;">
-                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(255,0,0,0.1); color: #ff4444; border: 1px solid rgba(255,0,0,0.3);">■ MRP</span>
-                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(0,0,255,0.1); color: #4444ff; border: 1px solid rgba(0,0,255,0.3);">■ Net Qty</span>
-                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(255,165,0,0.1); color: #ff8c00; border: 1px solid rgba(255,165,0,0.3);">■ Dates</span>
-                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(0,128,0,0.1); color: #008000; border: 1px solid rgba(0,128,0,0.3);">■ Mfr</span>
-                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(128,0,128,0.1); color: #800080; border: 1px solid rgba(128,0,128,0.3);">■ FSSAI</span>
-                        <span style="padding: 2px 6px; border-radius: 3px; background: rgba(0,200,0,0.1); color: #00c800; border: 1px solid rgba(0,200,0,0.3);">■ Other</span>
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">OCR Analysis — Annotated Output</div>
+                        <div class="card-subtitle">Color-coded bounding boxes show detected text</div>
                     </div>
                 </div>
-                <div style="padding: 0 16px 16px;">
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; font-size: 0.68rem;">
+                    <span style="padding: 2px 6px; border-radius: 3px; background: rgba(185,28,28,0.08); color: #b91c1c; border: 1px solid rgba(185,28,28,0.2);">■ MRP</span>
+                    <span style="padding: 2px 6px; border-radius: 3px; background: rgba(30,96,145,0.08); color: #1e6091; border: 1px solid rgba(30,96,145,0.2);">■ Net Qty</span>
+                    <span style="padding: 2px 6px; border-radius: 3px; background: rgba(180,83,9,0.08); color: #b45309; border: 1px solid rgba(180,83,9,0.2);">■ Dates</span>
+                    <span style="padding: 2px 6px; border-radius: 3px; background: rgba(45,106,79,0.08); color: #2d6a4f; border: 1px solid rgba(45,106,79,0.2);">■ Mfr</span>
+                    <span style="padding: 2px 6px; border-radius: 3px; background: rgba(128,0,128,0.08); color: #800080; border: 1px solid rgba(128,0,128,0.2);">■ FSSAI</span>
+                    <span style="padding: 2px 6px; border-radius: 3px; background: rgba(90,90,90,0.08); color: #5a5a5a; border: 1px solid rgba(90,90,90,0.2);">■ Other</span>
+                </div>
+                <div>
                     ${imageHtml}
                 </div>
             </div>

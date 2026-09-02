@@ -9,28 +9,28 @@ const SettingsPage = {
             </div>
             
             <div class="card mb-6">
-                <div class="flex justify-between items-start mb-4">
+                <div class="card-header">
                     <div>
-                        <div class="text-lg font-semibold text-gray-900 dark:text-white">Clear Temporary Files</div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">Deletes generated JSON logs, OCR text files, PDFs, and annotated images. Does NOT delete your products or original images.</div>
+                        <div class="card-title">Clear Temporary Files</div>
+                        <div class="card-subtitle">Deletes generated JSON logs, OCR text files, PDFs, and annotated images. Does NOT delete your products or original images.</div>
                     </div>
-                    <button class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg transition-colors" id="settings-clear-temp-btn">
+                    <button class="btn btn-outline" id="settings-clear-temp-btn">
                         Clear Temp Files
                     </button>
                 </div>
             </div>
             
-            <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5 border border-gray-100 dark:border-gray-700" style="border: 1px solid var(--danger); background-color: rgba(239, 68, 68, 0.05);">
-                <div class="flex justify-between items-start mb-4">
+            <div class="card" style="border-color: var(--danger-border); background: var(--danger-bg);">
+                <div class="card-header">
                     <div>
-                        <div class="text-lg font-semibold text-gray-900 dark:text-white" style="color: var(--danger);">Reset Application Data (Danger Zone)</div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400" style="color: var(--text-primary); opacity: 0.9;">
+                        <div class="card-title" style="color: var(--danger);">Reset Application Data</div>
+                        <div class="card-subtitle" style="color: var(--text-secondary);">
                             Wipes the Metroika database (all scanned products and history) and deletes all uploaded images from the app's upload folder. 
                             <strong>This only resets the app data. It will NOT affect anything else on your PC.</strong> 
                             This action cannot be undone.
                         </div>
                     </div>
-                    <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors" style="background-color: var(--danger); border-color: var(--danger); white-space: nowrap;" id="settings-factory-reset-btn">
+                    <button class="btn btn-danger" id="settings-factory-reset-btn" style="white-space: nowrap;">
                         Reset App Data
                     </button>
                 </div>
