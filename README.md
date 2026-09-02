@@ -7,7 +7,7 @@ AI-powered web application that scans product labels and images to automatically
 ## Features
 
 - **Multi-Image Upload** — Upload front, back, side views of product labels
-- **AI Vision Analysis** — Kimi K2.5 vision model extracts label text & declarations
+- **AI Vision Analysis** — gemini-2.5-flash model extracts label text & declarations
 - **Barcode/QR Scanning** — Automatic barcode detection via pyzbar
 - **15 Compliance Checks** — Validated against Rules 6, 7, and 8
 - **PDF Reports** — Color-coded compliance reports with evidence
