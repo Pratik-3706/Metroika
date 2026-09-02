@@ -30,19 +30,21 @@ You will be provided with:
 
 Review the images carefully. 
 - If the Rule Engine gave a "fail" or "warning", but you clearly see the required information or determine it is compliant, you should override it to "pass".
+- If the Rule Engine extracted the wrong information (e.g., incomplete address, wrong MRP, typo in Net Quantity), you MUST correct it based on what you see in the image.
 - Specifically evaluate visual rules like Font Size, Principal Display Panel, and language requirements. 
 - For Allergen info and Veg/Non-Veg symbols: if you visually identify the Green/Brown dot, pass the Veg/Non-Veg rule.
 
 Return ONLY a valid JSON object containing two keys:
 1. "pass_rules": a list of the `rule_id`s that should be overridden to "pass".
-2. "extracted_data": a dictionary mapping `rule_id` to the actual text value found on the package for any rule you are passing (e.g., {"R6_1_E": "Rs. 249.00"}).
+2. "extracted_data": a dictionary mapping `rule_id` to the actual text value found on the package. Use this to provide missing data for failed rules OR to correct wrong data for already-passed rules.
 
 Example:
 {
-  "pass_rules": ["VEG_1", "R8_PDP", "R6_1_E"],
+  "pass_rules": ["VEG_1", "R8_PDP"],
   "extracted_data": {
     "R6_1_E": "Rs. 249.00",
-    "R6_1_C": "500g"
+    "R6_1_C": "500g",
+    "R6_1_B": "HINDUSTAN UNILEVER LTD, MUMBAI 400099"
   }
 }
 Do not include markdown blocks, backticks, or any conversational text.
@@ -186,9 +188,15 @@ async def evaluate_with_ai(image_paths: List[str], raw_text: str, initial_report
             if rid in pass_rules:
                 rule["status"] = "pass"
                 rule["details"] = "Verified compliant by AI Vision Evaluator."
-                if rid in ai_extracted_data:
-                    # Overwrite the empty evidence with the AI's extraction
-                    rule["evidence"] = str(ai_extracted_data[rid])
+                
+            # Apply corrections to evidence regardless of whether it was in pass_rules
+            if rid in ai_extracted_data:
+                # Overwrite the evidence with the AI's extraction/correction
+                rule["evidence"] = str(ai_extracted_data[rid])
+                
+                # If we're updating evidence for a rule that already passed, note the correction
+                if rid not in pass_rules and rule["status"] == "pass":
+                    rule["details"] = rule.get("details", "") + " (Data corrected by AI Vision Evaluator)"
                 
         return initial_report
 

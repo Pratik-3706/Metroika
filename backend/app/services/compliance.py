@@ -37,6 +37,26 @@ logger = logging.getLogger(__name__)
 # Enhanced Regex Patterns for field extraction
 # ---------------------------------------------------------------------------
 
+# Stop-phrases that signal end of a manufacturer/address field
+_MANUFACTURER_STOP_PHRASES = re.compile(
+    r"(?:DO\s*NOT\s*BUY|SCAN\s*HERE|FOR\s*MRP|FOR\s*MFR|READ\s*THE|AS\s*COMPARED|"
+    r"FSSAI|INGREDIENTS|NUTRITION|ALLERGEN|STORE\s|KEEP\s|NET\s*(?:WT|WEIGHT|QTY)|"
+    r"BEST\s*BEFORE|USE\s*(?:BY|BEFORE|WITHIN)|MFG\.?\s*BY|MFD\.?\s*BY|"
+    r"TOLL\s*FREE|CUSTOMER\s*CARE|CONSUMER\s*CARE|BATCH|"
+    r"\bGARLIC\b|\bSPICES\b|\bPRESERVATIVE|IMITATION\s*OF|PUNISHABLE)",
+    re.IGNORECASE,
+)
+
+# Stop-phrases that signal end of an ingredients field
+_INGREDIENTS_STOP_PHRASES = re.compile(
+    r"(?:FSSAI|HUL\s*REGN|Lic\.?\s*No|NET\s*(?:WT|WEIGHT|QTY|CONTENT)|"
+    r"\bMRP\b|\bFOR\s+MRP\b|BATCH\s*NO|B\.?\s*No|"
+    r"NUTRITION|ALLERGEN|STORE\s|KEEP\s|BEST\s*BEFORE|USE\s*BY|"
+    r"PLEASE\s*SEE|SCAN\s*HERE|DO\s*NOT\s*BUY|TOLL\s*FREE|"
+    r"MKTD\.?\s*BY|MFD\.?\s*BY|MANUFACTURED|MARKETED|PACKED)",
+    re.IGNORECASE,
+)
+
 PATTERNS = {
     # Manufacturer / Packer / Importer details
     "manufacturer": re.compile(
@@ -67,22 +87,22 @@ PATTERNS = {
         r"(?:MRP|M\.?\s*R\.?\s*P\.?)"
         r"(?:\s*(?:IN\s+MUMBAI|O/?S\s+MUMBAI|IN\s+DELHI|O/?S\s+DELHI))?"
         r"[\s:.\-]*"
-        r"(?:Rs\.?\s*|₹\s*|INR\s*)?"
+        r"(?:Rs\.?\s*|₹\s*|INR\s*|Rupees?\s*)?"
         r"([\d,]+\.?\d*)"
         r"(?:\s*/?\s*-)?",
         re.IGNORECASE,
     ),
 
-    # Manufacture / Packing Date — various formats
+    # Manufacture / Packing Date — various formats (supports 2-digit years like DD/MM/YY)
     "manufacture_date": re.compile(
         r"(?:Mfg\.?\s*(?:Date|Dt)?\.?|Mfd\.?\s*(?:Date|Dt)?\.?|"
         r"Pkd\.?\s*(?:Date|Dt)?\.?|Pkdt\.?|"
         r"Pkg\.?\s*(?:Date|Dt)?\.?|"
         r"Date\s*of\s*(?:Mfg|Manufacture|Packing|Pkg)\.?)"
         r"[\s:.\-]*"
-        r"(\d{1,2}[\s/\-.]?\d{1,2}[\s/\-.]?\d{2,4}|"
+        r"(\d{1,2}[\s/\-.]\d{1,2}[\s/\-.]\d{2,4}|"
         r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*\d{2,4}|"
-        r"\d{1,2}[\s/\-.]?\d{2,4})",
+        r"\d{1,2}[\s/\-.]\d{2,4})",
         re.IGNORECASE,
     ),
 
@@ -92,17 +112,25 @@ PATTERNS = {
         r"Shelf\s*Life)"
         r"[\s:.\-]*"
         r"(\d+\s*(?:days?|months?|years?|D|M|Y)|"
-        r"\d{1,2}[\s/\-.]?\d{1,2}[\s/\-.]?\d{2,4}|"
+        r"\d{1,2}[\s/\-.]\d{1,2}[\s/\-.]\d{2,4}|"
         r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*\d{2,4}|"
-        r"\d{1,2}[\s/\-.]?\d{2,4})",
+        r"\d{1,2}[\s/\-.]\d{2,4})",
         re.IGNORECASE,
     ),
 
-    # Batch Number
+    # "Use within X months" — textual best-before (separate pattern)
+    "use_within": re.compile(
+        r"(?:USE\s*WITHIN|CONSUME\s*WITHIN)\s*"
+        r"(\d+\s*(?:days?|months?|years?|weeks?))"
+        r"(?:\s*(?:of|from)\s*(?:opening|manufacture|mfg|packing|packing\s*date|date\s*of\s*(?:mfg|manufacture|packing)))?",
+        re.IGNORECASE,
+    ),
+
+    # Batch Number — captures full codes like "844 121" or "D1355 L2-1"
     "batch_number": re.compile(
         r"(?:B\.?\s*No\.?|Batch\s*(?:No\.?|Number)|Lot\s*(?:No\.?|Number))"
         r"[\s:.\-]*"
-        r"([A-Za-z0-9\-/]+\d[A-Za-z0-9\-/]*)",
+        r"([A-Za-z0-9\-/]+[\s]?[A-Za-z0-9\-/]*\d[A-Za-z0-9\-/\s]*)",
         re.IGNORECASE,
     ),
 
@@ -152,9 +180,9 @@ PATTERNS = {
         re.IGNORECASE,
     ),
 
-    # Ingredients
+    # Ingredients — captures up to 500 chars, cleaned later by _clean_ingredients
     "ingredients": re.compile(
-        r"(?:Ingredients?\s*[:.])\s*(.{10,})",
+        r"(?:Ingredients?\s*[:.])\s*(.{10,500})",
         re.IGNORECASE,
     ),
 
@@ -191,10 +219,10 @@ PATTERNS = {
         re.IGNORECASE,
     ),
 
-    # Storage instructions
+    # Storage instructions — captures the full instruction sentence
     "storage": re.compile(
-        r"(?:Store|Keep|Storage)\s*(?:in|at)?\s*"
-        r"(?:a\s*)?(?:cool|dry|room\s*temp|refrigerat|below|away)",
+        r"((?:Store|Keep|Storage)\s*(?:in|at)?\s*"
+        r"(?:a\s*)?(?:cool|dry|room\s*temp|refrigerat|below|away)[^.]*\.?)",
         re.IGNORECASE,
     ),
 }
@@ -231,6 +259,58 @@ def _search_with_fallback(raw_text: str, primary_key: str, fallback_pattern: str
     return False, ""
 
 
+def _clean_manufacturer(val: str) -> str:
+    """Truncate manufacturer text at known stop-phrases to prevent bleeding."""
+    match = _MANUFACTURER_STOP_PHRASES.search(val)
+    if match:
+        val = val[:match.start()].strip()
+    # Remove trailing punctuation artifacts
+    val = re.sub(r"[,;.\-\s]+$", "", val)
+    # Cap at 150 chars as a safety net
+    if len(val) > 150:
+        val = val[:150].rsplit(',', 1)[0].strip()
+    return val
+
+
+def _clean_ingredients(val: str) -> str:
+    """Truncate ingredients text at known stop-phrases to prevent contamination."""
+    match = _INGREDIENTS_STOP_PHRASES.search(val)
+    if match:
+        val = val[:match.start()].strip()
+    # Remove trailing punctuation
+    val = re.sub(r"[,;.\-\s]+$", "", val)
+    return val
+
+
+def _validate_date_fragment(date_str: str) -> bool:
+    """
+    Basic sanity check for a date fragment like "69 3 19".
+    Returns False if the numbers can't plausibly be a date.
+    """
+    # Strip "(inferred)" suffix
+    clean = re.sub(r"\s*\(inferred\)\s*", "", date_str).strip()
+    # Extract numeric parts
+    parts = re.findall(r"\d+", clean)
+    if not parts:
+        return False
+    # At least the first number should be ≤ 31 (day) and second ≤ 12 (month)
+    try:
+        nums = [int(p) for p in parts]
+        if len(nums) >= 2:
+            # Either DD/MM/YY or MM/DD/YY — both require first two parts ≤ 31
+            if nums[0] > 31 or nums[1] > 31:
+                return False
+            # At least one of the first two must be ≤ 12 (month)
+            if nums[0] > 12 and nums[1] > 12:
+                return False
+        elif len(nums) == 1:
+            if nums[0] > 31:
+                return False
+    except (ValueError, IndexError):
+        return False
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Product Category Detection
 # ---------------------------------------------------------------------------
@@ -242,13 +322,14 @@ def detect_product_category(raw_text: str) -> str:
     if any(kw in text_lower for kw in ["schedule h", "rx", "medical practitioner", "dpco", "schedule-h", "schedule g"]):
         return "medicine"
         
-    # Cosmetics
-    if any(kw in text_lower for kw in ["cosmetic", "inci", "external use only"]):
-        return "cosmetic"
-        
-    # Food
-    if any(kw in text_lower for kw in ["fssai", "nutrition", "veg", "food", "edible"]):
+    # Food — check before cosmetics since FSSAI/nutrition keywords are more reliable
+    if any(kw in text_lower for kw in ["fssai", "nutrition", "food", "edible"]):
         return "food"
+        
+    # Cosmetics — use word-boundary for 'inci' to avoid false positive on 'Incl.'
+    cosmetic_keywords = ["cosmetic", "external use only"]
+    if any(kw in text_lower for kw in cosmetic_keywords) or re.search(r"\binci\b", text_lower):
+        return "cosmetic"
         
     # Chemicals
     if any(kw in text_lower for kw in ["poison", "hazard", "danger", "insecticide", "pesticide"]):
@@ -292,23 +373,62 @@ def run_compliance_checks(
     checks: List[Dict] = []
 
     # -----------------------------------------------------------------------
-    # 1. Product Name (R6_1_A) — Hard to regex, use heuristic
+    # 1. Product Name (R6_1_A) — Improved heuristic with keyword detection
     # -----------------------------------------------------------------------
-    # Look for prominent text that could be the product name
-    # In structured OCR, this is typically the largest/earliest text block
     product_name_found = False
     product_name_evidence = None
 
-    if structured_ocr:
-        # Check if any OCR result has large text at the top of any image
+    # Common product-type keywords to help identify actual product names
+    _PRODUCT_TYPE_KEYWORDS = [
+        "ketchup", "sauce", "jam", "juice", "biscuit", "cookie", "chips",
+        "noodles", "pasta", "rice", "flour", "oil", "soap", "shampoo",
+        "cream", "lotion", "powder", "tea", "coffee", "milk", "butter",
+        "cheese", "chocolate", "candy", "cereal", "bread", "water",
+        "drink", "beverage", "snack", "masala", "spice", "pickle",
+        "yogurt", "curd", "paneer", "ghee", "honey", "sugar", "salt",
+        "detergent", "cleaner", "toothpaste", "deodorant", "perfume",
+        "tablet", "capsule", "syrup", "ointment", "gel", "spray",
+    ]
+    # Words that should NOT be treated as product names
+    _NOT_PRODUCT_NAME = [
+        "per serve", "perserve", "per 100", "nutrition", "ingredients",
+        "energy", "protein", "carbohydrate", "fat", "sugar", "sodium",
+        "calories", "kcal", "rda", "dietary", "fibre", "cholesterol",
+        "serving", "approx", "typical", "values", "information",
+        "mktd", "mfg", "mfd", "manufactured", "marketed", "packed",
+        "batch", "fssai", "lic", "regn", "toll free", "scan here",
+    ]
+
+    # Strategy 1: Search OCR text for brand + product type patterns
+    for product_kw in _PRODUCT_TYPE_KEYWORDS:
+        # Look for "BrandName ProductType" or "BrandName® ProductType" patterns
+        pattern = re.compile(
+            r"([A-Z][A-Za-z']+(?:\s+[A-Z][A-Za-z']+)*)\s+" + re.escape(product_kw),
+            re.IGNORECASE
+        )
+        match = pattern.search(raw_text)
+        if match:
+            candidate = match.group(0).strip()
+            # Verify it's not a false positive from nutrition table
+            if not any(bad in candidate.lower() for bad in _NOT_PRODUCT_NAME):
+                product_name_found = True
+                product_name_evidence = candidate
+                break
+
+    # Strategy 2: If structured OCR available, look for large/prominent text blocks
+    if not product_name_found and structured_ocr:
         for img_path, ocr_items in structured_ocr.items():
             if ocr_items:
-                # First few text blocks are often the product name
-                top_texts = [item["text"] for item in ocr_items[:3]
-                             if item["confidence"] > 0.7 and len(item["text"]) > 2]
-                if top_texts:
+                # Filter to high-confidence text blocks that aren't noise
+                candidates = [
+                    item["text"] for item in ocr_items[:5]
+                    if item["confidence"] > 0.7
+                    and len(item["text"]) > 2
+                    and not any(bad in item["text"].lower() for bad in _NOT_PRODUCT_NAME)
+                ]
+                if candidates:
                     product_name_found = True
-                    product_name_evidence = top_texts[0]
+                    product_name_evidence = candidates[0]
                     break
 
     checks.append({
@@ -332,6 +452,12 @@ def run_compliance_checks(
             raw_text, "manufacturer",
             r"([A-Z][A-Za-z\s]+(?:Pvt\.?\s*Ltd\.?|Limited|Industries|Corp|Inc|LLP|P\.?O\.?\s*Box))"
         )
+
+    # Clean manufacturer text to remove trailing garbage
+    if found and val:
+        val = _clean_manufacturer(val)
+        if not val:
+            found = False
 
     checks.append({
         "rule_id": "R6_1_B",
@@ -375,26 +501,29 @@ def run_compliance_checks(
         "severity": "high",
     })
 
-    # Find all raw dates in the document for fallbacks
-    all_raw_dates = re.findall(r"\b\d{1,2}[\s/\-.]\d{1,2}[\s/\-.]\d{2,4}\b", raw_text)
+    # Find all raw dates in the document for fallbacks (avoiding phone numbers)
+    all_raw_dates = re.findall(r"(?<![\d\-])\d{1,2}[\s/\-.]\d{1,2}[\s/\-.]\d{2,4}(?![\d\-])", raw_text)
 
     # -----------------------------------------------------------------------
     # 4. Manufacture / Packing Date (R6_1_D)
     # -----------------------------------------------------------------------
     found_mfg, mfg_val = _search_text(raw_text, "manufacture_date")
     if not found_mfg:
-        # Fallback: look for date-like patterns near keywords
+        # Fallback: look for date-like patterns near keywords (supports 2-digit year)
         fallback = re.search(
-            r"(?:Mfg|Mfd|Pkd|Pkdt)[\s:.]*(\d{1,2}[\s/\-.]?\d{1,2}[\s/\-.]?\d{2,4})",
+            r"(?:Mfg|Mfd|Pkd|Pkdt)[\s:.]*(\d{1,2}[\s/\-.]\d{1,2}[\s/\-.]\d{2,4})",
             raw_text, re.IGNORECASE
         )
         if fallback:
             found_mfg = True
             mfg_val = fallback.group(1).strip()
         elif all_raw_dates:
-            # Aggressive fallback: assume the first raw date in the document is the manufacturing/packing date
-            found_mfg = True
-            mfg_val = all_raw_dates[0] + " (inferred)"
+            # Aggressive fallback: assume the first valid raw date is the mfg date
+            for candidate_date in all_raw_dates:
+                if _validate_date_fragment(candidate_date):
+                    found_mfg = True
+                    mfg_val = candidate_date + " (inferred)"
+                    break
 
     checks.append({
         "rule_id": "R6_1_D",
@@ -407,18 +536,79 @@ def run_compliance_checks(
     })
 
     # -----------------------------------------------------------------------
-    # 5. Maximum Retail Price (R6_1_E)
+    # 5. Maximum Retail Price (R6_1_E) — find ALL MRP mentions, pick best
     # -----------------------------------------------------------------------
-    found_mrp, mrp_val = _search_text(raw_text, "mrp")
+    # Find all MRP occurrences in the text
+    mrp_pattern_full = re.compile(
+        r"(?:MRP|M\.?\s*R\.?\s*P\.?)"
+        r"(?:\s*(?:IN\s+MUMBAI|O/?S\s+MUMBAI|IN\s+DELHI|O/?S\s+DELHI))?"
+        r"[\s:.\-]*"
+        r"(?:Rs\.?\s*|₹\s*|INR\s*|Rupees?\s*)?"
+        r"([\d,]+\.?\d*)"
+        r"(?:\s*/?\s*-)?",
+        re.IGNORECASE,
+    )
+    all_mrp_matches = mrp_pattern_full.finditer(raw_text)
+    best_mrp = None
+    best_mrp_score = -1
+    for m in all_mrp_matches:
+        # Ignore marketing comparative claims
+        context_before = raw_text[max(0, m.start()-40):m.start()]
+        if "COMPARED TO" in context_before.upper():
+            continue
+
+        candidate = m.group(1).strip().replace(',', '')
+        if not candidate:
+            continue
+        try:
+            val_num = float(candidate)
+        except ValueError:
+            continue
+            
+        # Score: prefer larger values (more likely the full MRP, not truncated)
+        # and values that have an "incl" phrase nearby
+        score = val_num
+        context_after = raw_text[m.end():m.end()+60]
+        if re.search(r"incl(?:usive)?\.?\s*(?:of\s+)?all\s+taxes", context_after, re.IGNORECASE):
+            score += 10000  # Heavily prefer MRP with tax declaration
+        if score > best_mrp_score:
+            best_mrp_score = score
+            best_mrp = m.group(1).strip()
+
+    found_mrp = best_mrp is not None
+    mrp_val = best_mrp or ""
+
     if not found_mrp:
-        # Fallback: simpler MRP pattern
-        fallback = re.search(
-            r"(?:MRP|M\.?R\.?P\.?)[\s:.\-]*(?:Rs\.?\s*|₹\s*)?(\d[\d,]*\.?\d*)",
-            raw_text, re.IGNORECASE
+        # Fallback: Standalone currency amounts (₹140, Rs. 140, 140/- or 1401- due to OCR)
+        # Only applied if we failed to find an explicit MRP keyword attached to a number
+        fallback_pattern = re.compile(
+            r"(?:Rs\.?\s+|₹\s*|INR\s+|Rupees?\s+)([\d,]+\.?\d*)|([\d,]+\.?\d*)\s*(?:/-)",
+            re.IGNORECASE
         )
-        if fallback:
+        fallback_matches = fallback_pattern.finditer(raw_text)
+        best_fallback_mrp = None
+        best_fallback_score = -1
+        
+        for m in fallback_matches:
+            val_str = m.group(1) or m.group(2)
+            if not val_str:
+                continue
+            try:
+                val_num = float(val_str.replace(',', ''))
+            except ValueError:
+                continue
+                
+            # Ignore tiny values like 0 or 1 which are likely OCR errors (e.g. from dates like 01-)
+            if val_num <= 1:
+                continue
+                
+            if val_num > best_fallback_score:
+                best_fallback_score = val_num
+                best_fallback_mrp = val_str.strip()
+                
+        if best_fallback_mrp is not None:
             found_mrp = True
-            mrp_val = fallback.group(1).strip()
+            mrp_val = best_fallback_mrp
 
     checks.append({
         "rule_id": "R6_1_E",
@@ -508,18 +698,25 @@ def run_compliance_checks(
     })
 
     # -----------------------------------------------------------------------
-    # 8. List of Ingredients
+    # 8. List of Ingredients — with stop-phrase cleaning
     # -----------------------------------------------------------------------
     found_ing, ing_val = _search_text(raw_text, "ingredients")
+    if found_ing and ing_val:
+        ing_val = _clean_ingredients(ing_val)
+        if len(ing_val) < 10:
+            # Cleaning removed too much, fall back
+            found_ing = False
+            ing_val = ""
+
     if not found_ing:
         # Fallback: look for the keyword and grab whatever follows it
         ing_fallback = re.search(
-            r"ingredients?\s*[:.]\s*(.{10,200})",
+            r"ingredients?\s*[:.]\s*(.{10,500})",
             raw_text, re.IGNORECASE
         )
         if ing_fallback:
             found_ing = True
-            ing_val = ing_fallback.group(1).strip()
+            ing_val = _clean_ingredients(ing_fallback.group(1).strip())
         else:
             # Last resort: just check if the keyword exists at all
             found_ing = bool(re.search(r"ingredients?\s*[:.]", raw_text, re.IGNORECASE))
@@ -571,18 +768,40 @@ def run_compliance_checks(
     })
 
     # -----------------------------------------------------------------------
-    # 10. Best Before / Expiry Date
+    # 10. Best Before / Expiry Date — with validation and "use within" support
     # -----------------------------------------------------------------------
     found_bb, bb_val = _search_text(raw_text, "best_before")
+
+    # If primary pattern didn't find it, try "use within X months" pattern
     if not found_bb:
+        found_bb, bb_val = _search_text(raw_text, "use_within")
+        if found_bb:
+            bb_val = f"Use within {bb_val}"
+
+    if not found_bb:
+        # Fallback to inferred dates — but validate them first
         if len(all_raw_dates) >= 2:
-            # If multiple dates exist, assume the last one is the expiry/best before
-            found_bb = True
-            bb_val = all_raw_dates[-1] + " (inferred)"
+            # Try the last raw date (often the expiry)
+            candidate = all_raw_dates[-1]
+            if _validate_date_fragment(candidate):
+                found_bb = True
+                bb_val = candidate + " (inferred)"
         elif len(all_raw_dates) == 1 and not found_mfg:
-            # If only one date exists and wasn't used for Mfg date
+            candidate = all_raw_dates[0]
+            if _validate_date_fragment(candidate):
+                found_bb = True
+                bb_val = candidate + " (inferred)"
+
+    # Also look for "USE BY DATE" textual reference as evidence
+    if not found_bb:
+        use_by_text = re.search(
+            r"USE\s*BY\s*DATE\s*WHICHEVER\s*IS\s*EARLIER",
+            raw_text, re.IGNORECASE
+        )
+        if use_by_text:
+            # There's a reference to use-by date but it's on the bottom of the pack
             found_bb = True
-            bb_val = all_raw_dates[0] + " (inferred)"
+            bb_val = "See bottom of pack (USE BY DATE referenced on label)"
 
     checks.append({
         "rule_id": "BB_1",
@@ -596,9 +815,20 @@ def run_compliance_checks(
     })
 
     # -----------------------------------------------------------------------
-    # 11. Batch Number
+    # 11. Batch Number — with improved capture and cleanup
     # -----------------------------------------------------------------------
     found_batch, batch_val = _search_text(raw_text, "batch_number")
+    if found_batch and batch_val:
+        # Clean up: trim trailing junk (stop at period, FSSAI, PLEASE, etc.)
+        batch_val = re.split(
+            r"(?:\.|FSSAI|PLEASE|LIC|HUL|FOR\s|\bAND\b)",
+            batch_val, flags=re.IGNORECASE
+        )[0].strip()
+        # Remove trailing whitespace/punctuation
+        batch_val = re.sub(r"[\s,;.\-]+$", "", batch_val)
+        if not batch_val:
+            found_batch = False
+
     if not found_batch:
         # Fallback: Look for standalone lot/batch-like codes (e.g. D1355, L2-1)
         fallback = re.search(
@@ -653,9 +883,45 @@ def run_compliance_checks(
     })
 
     # -----------------------------------------------------------------------
-    # 14. Storage Instructions
+    # 14. Storage Instructions — find all matches, pick the cleanest one
     # -----------------------------------------------------------------------
-    found_storage, storage_val = _search_text(raw_text, "storage")
+    storage_pattern = re.compile(
+        r"((?:Store|Keep|Storage)\s*(?:in|at)?\s*"
+        r"(?:a\s*)?(?:cool|dry|room\s*temp|refrigerat|below|away)[^.]*\.?)",
+        re.IGNORECASE,
+    )
+    all_storage_matches = storage_pattern.findall(raw_text)
+    found_storage = False
+    storage_val = ""
+
+    if all_storage_matches:
+        # Prefer matches that contain "STORE IN COOL" (full instruction) over
+        # short "KEEP REFRIGERAT" fragments that may have address bleeding
+        best = None
+        for sm in all_storage_matches:
+            sm = sm.strip()
+            # Cap at 200 chars to prevent garbage
+            if len(sm) > 200:
+                sm = sm[:200]
+            # Prefer matches with "STORE" and "COOL" and "DRY" as they're full instructions
+            if re.search(r"store\s+in\s+cool", sm, re.IGNORECASE):
+                best = sm
+                break
+        if not best:
+            # Pick the longest match that doesn't contain address-like content
+            for sm in sorted(all_storage_matches, key=len, reverse=True):
+                sm = sm.strip()
+                if len(sm) > 200:
+                    sm = sm[:200]
+                # Skip if it contains address-like patterns (GAT No, A/P:, TALUKA, etc.)
+                if not re.search(r"(?:GAT\s*No|A/P:|TALUKA|DISTT|DISTRICT|P\.?O\.?\s|VILLAGE)", sm, re.IGNORECASE):
+                    best = sm
+                    break
+        if not best:
+            best = all_storage_matches[0].strip()[:150]
+        found_storage = True
+        storage_val = best
+
     if not found_storage:
         # Broader fallback for storage instructions
         storage_fb = re.search(

@@ -67,10 +67,23 @@ async def create_product(
         unique_name = f"{uuid.uuid4().hex}{ext}"
         file_path = product_dir / unique_name
 
-        # Save file
-        with open(file_path, "wb") as f:
-            content = await image_file.read()
-            f.write(content)
+        # Save file (applying EXIF rotation so OpenCV doesn't get confused)
+        from PIL import Image, ImageOps
+        import io
+        
+        content = await image_file.read()
+        try:
+            with Image.open(io.BytesIO(content)) as img:
+                # Convert RGBA to RGB for saving if necessary, though keep format if possible
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                # Apply EXIF rotation to actual pixels and strip EXIF
+                img = ImageOps.exif_transpose(img)
+                img.save(file_path, format=img.format or "JPEG")
+        except Exception as e:
+            # Fallback to saving raw bytes if Pillow fails for some reason
+            with open(file_path, "wb") as f:
+                f.write(content)
 
         # Determine label
         label = label_list[i] if i < len(label_list) else f"image_{i + 1}"
