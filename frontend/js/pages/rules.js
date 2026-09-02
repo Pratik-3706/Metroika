@@ -7,7 +7,7 @@ const RulesPage = {
             <div class="section-header">
                 <div>
                     <h2 class="section-title">Legal Metrology Rules Reference</h2>
-                    <p class="text-sm text-muted mt-1">
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Legal Metrology (Packaged Commodities) Rules, 2011 — with amendments up to 2026
                     </p>
                 </div>

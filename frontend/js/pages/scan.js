@@ -263,13 +263,13 @@ const ScanPage = {
             <div class="card mb-6">
                 ${ComplianceCard.renderScoreCircle(result.compliance_score, result.status)}
                 <div style="text-align: center; margin-top: 12px;">
-                    <span class="text-sm text-muted">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
                         ${result.passed} passed · ${result.failed} failed · ${result.warnings} warnings
                         of ${result.total_checks} checks
                     </span>
                 </div>
                 <div style="text-align: center; margin-top: 16px; display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn btn-success px-3 py-1.5 text-xs" id="generate-report-btn">
+                    <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors px-3 py-1.5 text-xs" id="generate-report-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                             <polyline points="14 2 14 8 20 8"/>

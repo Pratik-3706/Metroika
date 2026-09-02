@@ -50,7 +50,7 @@ const ReportPage = {
             <div class="section-header">
                 <div>
                     <h2 class="section-title">${product.name || `Product #${product.id}`}</h2>
-                    <div class="text-sm text-muted mt-1">
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Scanned: ${new Date(product.created_at).toLocaleString()}
                         ${product.barcode_data ? ` · Barcode: ${product.barcode_data} (${product.barcode_type || 'Unknown'})` : ''}
                         ${extracted['detected_category'] ? ` · <span style="color:var(--primary); font-weight:bold;">Type: ${extracted['detected_category'].toUpperCase()}</span>` : ''}
@@ -71,7 +71,7 @@ const ReportPage = {
                         ${hasAnalysis ? 'Re-Analyze' : 'Analyze Now'}
                     </button>
                     ${hasAnalysis ? `
-                        <button class="btn btn-success px-3 py-1.5 text-xs" id="dl-report-btn">
+                        <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors px-3 py-1.5 text-xs" id="dl-report-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
                                 <polyline points="7 10 12 15 17 10"/>
@@ -106,7 +106,7 @@ const ReportPage = {
                     <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5 border border-gray-100 dark:border-gray-700">
                         ${ComplianceCard.renderScoreCircle(analysis.compliance_score, product.status)}
                         <div style="text-align: center; margin-top: 8px;">
-                            <span class="text-sm text-muted">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
                                 ${analysis.passed_checks} passed · ${analysis.failed_checks} failed · ${analysis.warning_checks} warnings
                             </span>
                         </div>

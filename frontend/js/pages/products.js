@@ -110,7 +110,7 @@ const ProductsPage = {
                             <td>
                                 <div class="flex gap-3">
                                     <button class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg transition-colors px-3 py-1.5 text-xs" onclick="location.hash='report/${p.id}'">View</button>
-                                    <button class="btn px-3 py-1.5 text-xs" style="color: var(--danger);" onclick="ProductsPage._deleteProduct(${p.id})">Delete</button>
+                                    <button class="inline-flex items-center justify-center gap-2 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg transition-colors px-3 py-1.5 text-xs" style="color: var(--danger);" onclick="ProductsPage._deleteProduct(${p.id})">Delete</button>
                                 </div>
                             </td>
                         </tr>
