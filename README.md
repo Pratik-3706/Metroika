@@ -19,7 +19,7 @@ AI-powered web application that scans product labels and images to automatically
 | Layer | Technology |
 |-------|-----------|
 | Backend | Python 3.11+, FastAPI, SQLAlchemy (async), SQLite |
-| AI Vision | Kimi K2.5 via OpenAI SDK (aicredits.in API) |
+| AI Vision | gemini-2.5-flash via OpenAI SDK (aicredits.in API) |
 | Barcode | pyzbar (EAN-13, UPC-A, QR, Code128) |
 | PDF | ReportLab |
 | Frontend | Vanilla HTML/CSS/JS SPA |
