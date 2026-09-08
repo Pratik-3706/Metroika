@@ -20,12 +20,11 @@ backend/metroika.db
 metroika.db
 
 # User Uploads & Generated Reports
-backend/uploads/*
-!backend/uploads/.gitkeep
-backend/reports/*
-!backend/reports/.gitkeep
+backend/uploads/
+backend/reports/
 backend/downloads/
 backend/dummy_label.jpg
+*.pdf
 
 # Logs
 *.log
