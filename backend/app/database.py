@@ -31,6 +31,12 @@ class ComplianceStatus(str, enum.Enum):
     WARNING = "warning"
 
 
+class UserRole(str, enum.Enum):
+    INSPECTOR = "inspector"
+    MERCHANT = "merchant"
+    PUBLIC = "public"
+
+
 class CheckResult(str, enum.Enum):
     PASS = "pass"
     FAIL = "fail"
@@ -41,6 +47,17 @@ class CheckResult(str, enum.Enum):
 # ---------------------------------------------------------------------------
 # ORM Models
 # ---------------------------------------------------------------------------
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    salt: Mapped[str] = mapped_column(String(64))
+    role: Mapped[str] = mapped_column(String(20), default=UserRole.PUBLIC.value)
+    full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 class Product(Base):
     __tablename__ = "products"
 
@@ -121,9 +138,40 @@ class ComplianceCheck(Base):
 # DB Init
 # ---------------------------------------------------------------------------
 async def init_db():
-    """Create all tables."""
+    """Create all tables and seed default users if empty."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Seed default accounts
+    from sqlalchemy import select
+    from app.auth import hash_password
+    from app.config import settings
+
+    async with async_session() as session:
+        result = await session.execute(select(User).limit(1))
+        if not result.scalar_one_or_none():
+            
+            # Read hexed passwords from settings (which loads them from .env)
+            admin_pass = bytes.fromhex(settings.admin_pass_hex).decode('utf-8')
+            merchant_pass = bytes.fromhex(settings.merchant_pass_hex).decode('utf-8')
+            public_pass = bytes.fromhex(settings.public_pass_hex).decode('utf-8')
+
+            defaults = [
+                ("inspector", admin_pass, UserRole.INSPECTOR.value, "Legal Metrology Enforcement Officer"),
+                ("merchant", merchant_pass, UserRole.MERCHANT.value, "Brand Compliance Officer"),
+                ("public", public_pass, UserRole.PUBLIC.value, "Consumer User"),
+            ]
+            for uname, pwd, role, fname in defaults:
+                p_hash, salt = hash_password(pwd)
+                user = User(
+                    username=uname,
+                    password_hash=p_hash,
+                    salt=salt,
+                    role=role,
+                    full_name=fname,
+                )
+                session.add(user)
+            await session.commit()
 
 
 async def get_session() -> AsyncSession:

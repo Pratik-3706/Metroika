@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 from app.config import settings
 from app.database import Product, ProductImage, get_session
 from app.models import ProductOut, ProductListOut
+from app.auth import require_role
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
@@ -169,8 +170,9 @@ async def get_product(
 async def delete_product(
     product_id: int,
     db: AsyncSession = Depends(get_session),
+    inspector = Depends(require_role(["inspector"])),
 ):
-    """Delete a product and all associated data."""
+    """Delete a product and all associated data (Inspector Only)."""
     result = await db.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
     if not product:

@@ -145,13 +145,13 @@ PDP_RULE = {
 # ---------------------------------------------------------------------------
 UNIT_SALE_PRICE_RULE = {
     "rule_id": "R6_UNIT",
-    "rule_name": "Unit Sale Price",
-    "rule_reference": "Rule 6(2)",
+    "rule_name": "Unit Sale Price (USP)",
+    "rule_reference": "Rule 6(2) [2022 Amendment]",
     "description": (
-        "The unit sale price shall be declared to enable consumers to "
-        "compare the price per standard unit."
+        "The unit sale price (e.g. ₹/g, ₹/kg, ₹/ml, ₹/litre, ₹/piece) shall be "
+        "declared on packages exceeding 1g or 1ml to enable direct consumer price comparison."
     ),
-    "severity": "low",
+    "severity": "high",
 }
 
 LANGUAGE_RULE = {
@@ -199,6 +199,75 @@ DATE_FORMAT_RULE = {
 }
 
 # ---------------------------------------------------------------------------
+# Medicine / Pharma — Specific Rules (Drugs Rules / DPCO)
+# ---------------------------------------------------------------------------
+DRUG_LICENSE_RULE = {
+    "rule_id": "DRUG_LIC",
+    "rule_name": "Drug Manufacturing License Number",
+    "rule_reference": "Drugs & Cosmetics Rules",
+    "description": (
+        "The manufacturing license number (Mfg. Lic. No.) issued by the "
+        "State Drug Controller must be declared on the package."
+    ),
+    "severity": "high",
+}
+
+COMPOSITION_RULE = {
+    "rule_id": "COMP_1",
+    "rule_name": "Composition / Formulation",
+    "rule_reference": "Drugs & Cosmetics Rules",
+    "description": (
+        "The complete composition or formulation of the drug, including "
+        "active ingredients and their quantities, must be declared."
+    ),
+    "severity": "high",
+}
+
+DOSAGE_RULE = {
+    "rule_id": "DOSE_1",
+    "rule_name": "Dosage Instructions",
+    "rule_reference": "Drugs & Cosmetics Rules",
+    "description": (
+        "Dosage instructions or a directive such as 'As directed by the "
+        "Physician' must be present on the drug packaging."
+    ),
+    "severity": "high",
+}
+
+WARNING_RULE = {
+    "rule_id": "WARN_1",
+    "rule_name": "Warning / Caution Statements",
+    "rule_reference": "Drugs & Cosmetics Rules",
+    "description": (
+        "Appropriate warning and caution statements must be declared on "
+        "the drug packaging, including usage precautions and contraindications."
+    ),
+    "severity": "medium",
+}
+
+SCHEDULE_RULE = {
+    "rule_id": "SCHED_1",
+    "rule_name": "Schedule Classification",
+    "rule_reference": "Drugs & Cosmetics Rules",
+    "description": (
+        "If applicable, the drug's schedule classification (Schedule H, "
+        "Schedule G, Schedule X, etc.) must be declared on the packaging."
+    ),
+    "severity": "medium",
+}
+
+MFG_LICENSE_RULE = {
+    "rule_id": "MFG_LIC",
+    "rule_name": "Manufacturing License Number",
+    "rule_reference": "Best Practice / Industry Standard",
+    "description": (
+        "A manufacturing license number (Mfg. Lic. No.) should be present "
+        "on the package for traceability and regulatory compliance."
+    ),
+    "severity": "medium",
+}
+
+# ---------------------------------------------------------------------------
 # Rule Sets by Category
 # ---------------------------------------------------------------------------
 # Universal Core (Rule 6) - applies to all general commodities
@@ -226,7 +295,12 @@ MEDICINE_RULES: Dict[str, Dict] = {
     PDP_RULE["rule_id"]: PDP_RULE,
     LANGUAGE_RULE["rule_id"]: LANGUAGE_RULE,
     BARCODE_RULE["rule_id"]: BARCODE_RULE,
-    # Medicine specific fields will be detected and added in compliance.py
+    # Medicine-specific rules
+    DRUG_LICENSE_RULE["rule_id"]: DRUG_LICENSE_RULE,
+    COMPOSITION_RULE["rule_id"]: COMPOSITION_RULE,
+    DOSAGE_RULE["rule_id"]: DOSAGE_RULE,
+    WARNING_RULE["rule_id"]: WARNING_RULE,
+    SCHEDULE_RULE["rule_id"]: SCHEDULE_RULE,
 }
 
 # Electronics / Hardware - No expiry dates
@@ -252,6 +326,12 @@ CHEMICAL_RULES: Dict[str, Dict] = {
 # Collect all rules for fallback/iteration
 ALL_RULES: Dict[str, Dict] = {
     **UNIVERSAL_CORE_RULES,
+    DRUG_LICENSE_RULE["rule_id"]: DRUG_LICENSE_RULE,
+    COMPOSITION_RULE["rule_id"]: COMPOSITION_RULE,
+    DOSAGE_RULE["rule_id"]: DOSAGE_RULE,
+    WARNING_RULE["rule_id"]: WARNING_RULE,
+    SCHEDULE_RULE["rule_id"]: SCHEDULE_RULE,
+    MFG_LICENSE_RULE["rule_id"]: MFG_LICENSE_RULE,
 }
 
 
@@ -274,7 +354,11 @@ VALID_QUANTITY_UNITS = {
 
 # Regex patterns
 MRP_PATTERN = re.compile(
-    r"(?:MRP|M\.R\.P\.?)\s*(?:Rs\.?|₹|INR)\s*[\d,]+(?:\.\d{1,2})?\s*"
+    r"(?:MRP|M\.?\s*R\.?\s*P\.?)"
+    r"[\s:.\-]*"
+    r"(?:Rs\.?|₹|INR|Rupees?|R\b|R(?=[\s:.\-\d])|`|\?|\$)?\s*"
+    r"[\s:.\-]*"
+    r"[\d,]+(?:\.\d{1,2})?\s*"
     r"(?:\(?(?:incl(?:usive)?|inc)\.?\s*(?:of\s+)?all\s+taxes\)?)?",
     re.IGNORECASE,
 )
@@ -355,3 +439,46 @@ def validate_net_quantity(quantity_text: str) -> Tuple[bool, str]:
         f"Net quantity '{quantity_text}' is not in standard SI units "
         "(g, kg, ml, L, cm, m, pieces, etc.)."
     )
+
+
+# ---------------------------------------------------------------------------
+# Statutory Penalties — Legal Metrology Act, 2009
+# ---------------------------------------------------------------------------
+STATUTORY_PENALTIES = {
+    "SEC_36_1": {
+        "section": "Section 36(1), Legal Metrology Act, 2009",
+        "title": "Penalty for Non-Standard Packages & Missing Declarations",
+        "statutory_text": (
+            "Whoever manufactures, packs, imports, sells, distributes, delivers or "
+            "otherwise transfers, offers, exposes or puts in condition for sale, or "
+            "has in his possession for sale, any pre-packaged commodity which does not "
+            "conform to the declarations on the package as prescribed under the "
+            "Legal Metrology (Packaged Commodities) Rules, 2011, shall be punished."
+        ),
+        "first_offence": "Fine up to ₹25,000",
+        "second_offence": "Fine up to ₹50,000",
+        "subsequent_offence": "Fine up to ₹1,00,000 or imprisonment up to 1 year, or both",
+        "compoundable": True,
+    },
+    "SEC_36_2": {
+        "section": "Section 36(2), Legal Metrology Act, 2009",
+        "title": "Penalty for Selling Above Maximum Retail Price (MRP)",
+        "statutory_text": (
+            "Whoever manufactures, packs or sells any non-standard package or "
+            "charges in excess of the Maximum Retail Price (MRP) declared on the package "
+            "shall be punished with fine or imprisonment."
+        ),
+        "first_offence": "Fine up to ₹25,000",
+        "second_offence": "Fine up to ₹50,000",
+        "subsequent_offence": "Fine up to ₹1,00,000 or imprisonment up to 1 year, or both",
+        "compoundable": True,
+    },
+}
+
+def get_statutory_penalty(rule_id: str) -> Optional[Dict]:
+    """Return the statutory Legal Metrology Act penal section for a given rule violation."""
+    if rule_id in ("R6_1_E", "MRP_FMT"):
+        return STATUTORY_PENALTIES["SEC_36_2"]
+    if rule_id.startswith("R6") or rule_id.startswith("R7") or rule_id.startswith("R8") or rule_id in ("BATCH_1", "BB_1", "DATE_FMT", "COO_1"):
+        return STATUTORY_PENALTIES["SEC_36_1"]
+    return None

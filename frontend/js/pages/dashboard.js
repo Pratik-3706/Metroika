@@ -77,24 +77,52 @@ const DashboardPage = {
         Charts.destroyAll();
     },
 
-    async _loadData() {
+    async _loadData(retryCount = 0) {
         try {
             const [stats, recent] = await Promise.all([
                 API.getDashboardStats(),
                 API.getRecentScans(),
             ]);
 
+            // Remove connecting state banner if present
+            const banner = document.getElementById('dash-connection-status');
+            if (banner) banner.remove();
+
             this._renderStats(stats);
             Charts.createComplianceDonut('compliance-donut', stats);
-
-            if (stats.common_violations && stats.common_violations.length > 0) {
-                Charts.createViolationsBar('violations-bar', stats.common_violations);
-            }
-
+            Charts.createViolationsBar('violations-bar', stats.common_violations || []);
             this._renderRecentScans(recent);
         } catch (error) {
-            console.warn('Dashboard data load failed:', error);
-            this._renderEmptyState();
+            console.warn(`Dashboard data load attempt ${retryCount + 1} failed:`, error);
+
+            // If backend is still starting up or waking, auto-retry with polling so user doesn't have to refresh
+            if (retryCount < 12) {
+                this._showConnectingState(retryCount);
+                setTimeout(async () => {
+                    if (App.currentPage === DashboardPage) {
+                        this._loadData(retryCount + 1);
+                    }
+                }, 1000);
+            } else {
+                this._renderEmptyState();
+            }
+        }
+    },
+
+    _showConnectingState(retryCount) {
+        let banner = document.getElementById('dash-connection-status');
+        const grid = document.getElementById('stats-grid');
+        if (!banner && grid && grid.parentNode) {
+            banner = document.createElement('div');
+            banner.id = 'dash-connection-status';
+            banner.className = 'connection-banner';
+            grid.parentNode.insertBefore(banner, grid);
+        }
+        if (banner) {
+            banner.innerHTML = `
+                <div class="spinner" style="width: 16px; height: 16px;"></div>
+                <span>Connecting to Legal Metrology compliance engine (Attempt ${retryCount + 1}/12)...</span>
+            `;
         }
     },
 
@@ -196,6 +224,11 @@ const DashboardPage = {
                 <div class="stat-card warning"><div class="stat-label">Warnings</div><div class="stat-value">0</div></div>
             `;
         }
+        
+        // Ensure canvases are not left blank on fresh install/empty db
+        Charts.createComplianceDonut('compliance-donut', { compliant: 0, non_compliant: 0, warnings: 0, pending: 0 });
+        Charts.createViolationsBar('violations-bar', []);
+
         const table = document.getElementById('recent-scans-table');
         if (table) {
             table.innerHTML = `

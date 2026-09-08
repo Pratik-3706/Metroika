@@ -96,4 +96,5 @@ Once the backend is running, visit `http://localhost:8000/docs` for interactive 
 
 ## License
 
-Built for Smart India Hackathon 2026.
+- **Source Code**: Licensed under the [MIT License](LICENSE).
+- **Visual Assets (PNG Files Only)**: Copyright &copy; 2026 Pratik. All rights reserved. All PNG graphics and logos in `frontend/assets/` are protected proprietary creative works.

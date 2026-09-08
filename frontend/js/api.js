@@ -11,21 +11,31 @@ const API = {
     async request(endpoint, options = {}) {
         const url = `${this.BASE_URL}${endpoint}`;
         try {
+            const token = localStorage.getItem('metroika_token');
+            const headers = {
+                ...(!options.isFormData && { 'Content-Type': 'application/json' }),
+                ...(token && { 'Authorization': `Bearer ${token}` }),
+                ...options.headers,
+            };
+
             const response = await fetch(url, {
                 ...options,
-                headers: {
-                    ...(!options.isFormData && { 'Content-Type': 'application/json' }),
-                    ...options.headers,
-                },
+                headers,
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('metroika_token');
+                    localStorage.removeItem('metroika_role');
+                    localStorage.removeItem('metroika_user');
+                }
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
             }
 
-            // Handle file downloads
-            if (response.headers.get('content-type')?.includes('application/pdf')) {
+            // Handle file downloads (PDF and CSV)
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/pdf') || contentType.includes('text/csv')) {
                 return response.blob();
             }
 
@@ -94,16 +104,91 @@ const API = {
         });
     },
 
-    async downloadReport(filename) {
-        const url = `${this.BASE_URL}/api/reports/${filename}`;
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to download report');
-        const blob = await response.blob();
+    async downloadReport(filenameOrId) {
+        let filename = filenameOrId;
+        // If passed a numeric product ID, trigger report generation first
+        if (typeof filenameOrId === 'number' || (/^\d+$/.test(String(filenameOrId).trim()))) {
+            const reportData = await this.generateReport(filenameOrId);
+            filename = reportData.filename || (reportData.download_url ? reportData.download_url.split('/').pop() : `compliance_report_${filenameOrId}.pdf`);
+        } else if (typeof filename === 'string' && filename.includes('/')) {
+            filename = filename.split('/').pop();
+        }
+
+        const blob = await this.request(`/api/reports/${filename}`);
+        const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
+        link.href = blobUrl;
         link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
         link.click();
-        URL.revokeObjectURL(link.href);
+        setTimeout(() => {
+            if (document.body.contains(link)) {
+                document.body.removeChild(link);
+            }
+            URL.revokeObjectURL(blobUrl);
+        }, 1500);
+        return filename;
+    },
+
+    async getReport(filename) {
+        return this.downloadReport(filename);
+    },
+
+    async downloadReportCsv(productId) {
+        const blob = await this.request(`/api/products/${productId}/report/csv`);
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `compliance_report_${productId}.csv`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+            if (document.body.contains(link)) {
+                document.body.removeChild(link);
+            }
+            URL.revokeObjectURL(blobUrl);
+        }, 1500);
+    },
+
+    async getShowCauseNotice(productId) {
+        return this.request(`/api/products/${productId}/report/notice`);
+    },
+
+    async auditEcommerceListing(data) {
+        return this.request('/api/products/audit_listing', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    // ----- Authentication & RBAC -----
+    async login(username, password) {
+        const res = await this.request('/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ username, password }),
+        });
+        if (res.access_token) {
+            localStorage.setItem('metroika_token', res.access_token);
+            localStorage.setItem('metroika_role', res.user.role);
+            localStorage.setItem('metroika_user', JSON.stringify(res.user));
+        }
+        return res;
+    },
+
+    async getCurrentUser() {
+        return this.request('/api/auth/me');
+    },
+
+    async getRoles() {
+        return this.request('/api/auth/roles');
+    },
+
+    logout() {
+        localStorage.removeItem('metroika_token');
+        localStorage.removeItem('metroika_role');
+        localStorage.removeItem('metroika_user');
     },
 
     // ----- Dashboard -----

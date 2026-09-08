@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import init_db
-from app.routers import products, analysis, reports, dashboard
+from app.routers import products, analysis, reports, dashboard, auth
 
 # Configure logging
 logging.basicConfig(
@@ -42,6 +42,11 @@ async def lifespan(app: FastAPI):
     logger.info(f"Upload dir: {settings.upload_dir}")
     logger.info(f"Report dir: {settings.report_dir}")
 
+    # Pre-warm Multilingual OCR engine in background thread so server starts instantly in <0.2s
+    import asyncio
+    from app.services.ocr import get_ocr_engine
+    asyncio.create_task(asyncio.to_thread(get_ocr_engine))
+
     yield
 
     logger.info("Metroika shutting down.")
@@ -69,6 +74,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(analysis.router)
 app.include_router(reports.router)
@@ -101,5 +107,13 @@ async def root():
 
 @app.get("/api/health")
 async def health():
-    """Health check endpoint."""
-    return {"status": "healthy"}
+    """Health check endpoint with OCR engine readiness status."""
+    from app.services.ocr import ocr_engine, get_ocr_status
+    status_info = get_ocr_status()
+    return {
+        "status": "healthy",
+        "ocr_ready": ocr_engine is not None and status_info.get("state") == "ready",
+        "ocr_state": status_info.get("state", "ready" if ocr_engine is not None else "loading"),
+        "ocr_message": status_info.get("message", "Ready"),
+        "device": status_info.get("device", "gpu"),
+    }

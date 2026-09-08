@@ -31,45 +31,91 @@ const ComplianceCard = {
                     <div class="check-reference">${check.rule_reference}</div>
                     <div class="check-details">${check.details}</div>
                     ${check.evidence ? `<div class="check-evidence">Evidence: ${check.evidence}</div>` : ''}
+                    ${check.statutory_penalty ? `<div class="penalty-tag">⚖️ ${check.statutory_penalty}</div>` : ''}
                 </div>
                 <span class="check-severity ${check.severity}">${check.severity}</span>
             </div>
         `;
     },
 
-    renderScoreCircle(score, status) {
-        const colors = {
-            compliant: 'var(--success)',
-            non_compliant: 'var(--danger)',
-            warning: 'var(--warning)',
-            pending: 'var(--text-muted)',
-        };
-        const statusLabels = {
-            compliant: 'COMPLIANT',
-            non_compliant: 'NON-COMPLIANT',
-            warning: 'HAS WARNINGS',
-            pending: 'PENDING',
-        };
-
-        const color = colors[status] || colors.pending;
-        const label = statusLabels[status] || status;
+    renderScoreCircle(score, status, passedCount = null, totalCount = null) {
+        const roundedScore = Math.round(score || 0);
+        const nonCompliantPct = Math.max(0, 100 - roundedScore);
+        
+        // Gauge stroke circumference (2 * PI * 64 ≈ 402)
+        const circumference = 402;
+        const offset = Math.max(0, circumference - (circumference * roundedScore) / 100);
 
         return `
-            <div class="compliance-score">
-                <div class="score-circle" style="--score-pct: ${score}; --score-color: ${color};">
-                    <div class="score-value" style="color: ${color}">${Math.round(score)}%</div>
-                    <div class="score-label">Score</div>
+            <div class="compliance-score-dashboard-card">
+                <div class="gauge-wrap">
+                    <svg class="score-gauge-svg" viewBox="0 0 160 160">
+                        <circle cx="80" cy="80" r="64" class="gauge-track"/>
+                        <circle cx="80" cy="80" r="64" class="gauge-fill ${status}" 
+                                stroke-dasharray="${circumference}" 
+                                stroke-dashoffset="${offset}"/>
+                    </svg>
+                    <div class="gauge-center-content">
+                        <span class="gauge-number">${roundedScore}%</span>
+                        <span class="gauge-sub">RULES PASSED</span>
+                    </div>
                 </div>
-                <div class="score-status" style="color: ${color}">${label}</div>
+                
+                <div class="score-audit-verdict">
+                    ${status === 'compliant' ? `
+                        <div class="verdict-pill compliant">
+                            <span class="verdict-dot"></span>
+                            <span>STATUTORILY COMPLIANT · APPROVED</span>
+                        </div>
+                        <div class="verdict-summary">
+                            <div class="verdict-tags-row">
+                                <span class="pass-tag">✓ 100% Rules Passed</span>
+                                <span class="zero-tag">0 Violations</span>
+                            </div>
+                            <p class="verdict-note">All mandatory declarations under Legal Metrology Rules, 2011 are present and fully compliant.</p>
+                        </div>
+                    ` : status === 'non_compliant' ? `
+                        <div class="verdict-pill non_compliant">
+                            <span class="verdict-dot"></span>
+                            <span>NON-COMPLIANT · DEFECTS DETECTED</span>
+                        </div>
+                        <div class="verdict-summary">
+                            <div class="verdict-tags-row">
+                                <span class="pass-tag">✓ ${roundedScore}% Rules Passed (${passedCount ? `${passedCount} of ${totalCount}` : 'Passed'})</span>
+                                <span class="fail-tag">✕ ${nonCompliantPct}% Failed (${totalCount && passedCount ? `${totalCount - passedCount} Violations` : 'Defects Found'})</span>
+                            </div>
+                            <p class="verdict-note">Under Rule 6, packaged goods require <strong>100% compliance</strong>. A single violation renders the product legally Non-Compliant.</p>
+                        </div>
+                    ` : `
+                        <div class="verdict-pill warning">
+                            <span class="verdict-dot"></span>
+                            <span>ADVISORY / WARNING</span>
+                        </div>
+                        <div class="verdict-summary">
+                            <div class="verdict-tags-row">
+                                <span class="pass-tag">✓ ${roundedScore}% Rules Passed</span>
+                                <span class="warn-tag">⚠ Advisory Warnings</span>
+                            </div>
+                            <p class="verdict-note">Statutory declarations are detected but contain formatting or clarity warnings.</p>
+                        </div>
+                    `}
+                </div>
             </div>
         `;
     },
 
     renderStatusBadge(status) {
+        const labels = {
+            compliant: '100% Compliant',
+            non_compliant: 'Non-Compliant',
+            warning: 'Warning / Advisory',
+            pending: 'Pending Audit',
+        };
+        const text = labels[status] || status.replace('_', '-');
         return `
             <span class="status-badge ${status}">
                 <span class="status-dot"></span>
-                ${status.replace('_', '-')}
+                <span>${text}</span>
             </span>
         `;
     },

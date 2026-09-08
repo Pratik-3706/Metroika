@@ -6,31 +6,50 @@
     <title>Metroika — Legal Metrology Compliance Checker</title>
     <meta name="description" content="AI-powered compliance checker for packaged commodities under Legal Metrology (Packaged Commodities) Rules, 2011">
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Editorial Minimalist Typography (Cormorant Garamond & Plus Jakarta Sans) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <!-- Chart.js (Local Bundle with CDN Fallback) -->
+    <script src="js/chart.umd.min.js"></script>
+    <script>
+        if (typeof Chart === 'undefined') {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"><\/script>');
+        }
+    </script>
+
+    <link rel="icon" type="image/png" href="assets/cheap_logo.png">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css?v=8">
 </head>
 <body>
+    <!-- Full-Screen Initial Neural Loader (Multi-Layer Rotating Emblem) -->
+    <div id="app-loading-screen" class="app-loading-screen">
+        <div class="logo-wrapper">
+            <div class="glow-bg"></div>
+            <img class="layer layer-glow" src="assets/loading_animation/last_layer.png" alt="Layer Outer Glow">
+            <img class="layer layer-middle" src="assets/loading_animation/middle_layer.png" alt="Layer Mid">
+            <img class="layer layer-top" src="assets/loading_animation/top_layer.png" alt="Layer Core">
+        </div>
+        <div class="bar-wrap">
+            <div class="bar"></div>
+        </div>
+        <p class="loading-text" id="app-loading-status">Legal Metrology Neural System Initializing</p>
+    </div>
+
     <div id="app">
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <div class="logo-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 12l2 2 4-4"/>
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-                        </svg>
+                    <div class="logo-brand-wrap">
+                        <img src="assets/cheap_logo.png" alt="Metroika Logo" class="brand-logo-img">
                     </div>
                     <div class="logo-text">
                         <span class="logo-name">Metroika</span>
+                        <span class="logo-tagline-sub">Legal Metrology</span>
                     </div>
                 </div>
             </div>
@@ -70,7 +89,7 @@
                     </svg>
                     <span>Rules Reference</span>
                 </a>
-                <a href="#settings" class="nav-link" data-page="settings">
+                <a href="#settings" class="nav-link inspector-only" data-page="settings">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3"/>
                         <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
@@ -118,6 +137,28 @@
                             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                         </svg>
                     </button>
+                    <div class="role-switcher-container" style="position: relative;">
+                        <button class="role-badge-btn" id="role-badge-btn" title="Click to switch role / user mode">
+                            <span class="role-icon" id="role-badge-icon">🛡️</span>
+                            <span id="role-badge-label" style="font-weight: 600;">Inspector Mode</span>
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="role-dropdown-menu" id="role-dropdown-menu" style="display: none;">
+                            <div class="role-opt" data-role="inspector" data-user="inspector">
+                                <div class="role-opt-header">🛡️ Enforcement Officer (Inspector)</div>
+                                <div class="role-opt-desc">Full powers: Show Cause Notices, Section 36 penalties, deletions.</div>
+                            </div>
+                            <div class="role-opt" data-role="merchant" data-user="merchant">
+                                <div class="role-opt-header">🏢 Brand / Packaging Manager</div>
+                                <div class="role-opt-desc">Pre-market audits, compliance scoring, no penal actions.</div>
+                            </div>
+                            <div class="role-opt" data-role="public" data-user="public">
+                                <div class="role-opt-header">👤 Consumer / Public Mode</div>
+                                <div class="role-opt-desc">Public commodity scan and transparency check.</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="topbar-badge">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -134,21 +175,128 @@
         </main>
     </div>
 
+    <!-- Statutory Show Cause Notice Modal -->
+    <div class="modal-backdrop" id="notice-modal" style="display: none;">
+        <div class="notice-modal-card">
+            <div class="notice-modal-header">
+                <h3>⚖️ Statutory Show Cause Notice (Section 36)</h3>
+                <button class="notice-close-btn" id="notice-modal-close">&times;</button>
+            </div>
+            <div class="notice-modal-body" id="notice-modal-content">
+                <!-- Dynamically rendered legal notice -->
+            </div>
+            <div class="notice-modal-footer">
+                <button class="btn btn-secondary" id="notice-print-btn">🖨️ Print / Save Notice</button>
+                <button class="btn btn-primary" id="notice-dismiss-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Authentication / Role Switcher Modal (Replaces browser window.prompt) -->
+    <div class="modal-backdrop" id="login-modal" style="display: none;">
+        <div class="login-modal-card">
+            <div class="login-modal-header">
+                <div class="login-header-title-wrap">
+                    <span class="login-header-icon" id="login-modal-icon">🛡️</span>
+                    <div>
+                        <h3 id="login-modal-title">Sign In & Switch Role</h3>
+                        <p class="login-modal-subtitle" id="login-modal-subtitle">Authenticate with Legal Metrology portal credentials</p>
+                    </div>
+                </div>
+                <button class="notice-close-btn" id="login-modal-close" aria-label="Close dialog">&times;</button>
+            </div>
+            
+            <form id="login-modal-form" class="login-modal-form" onsubmit="return false;">
+                <div class="login-roles-section">
+                    <label class="login-label">Select Target Role</label>
+                    <div class="role-selector-grid" id="role-selector-grid">
+                        <button type="button" class="role-select-card active" data-role="inspector" data-user="inspector" data-pass="Inspector@2026!">
+                            <div class="role-card-icon">🛡️</div>
+                            <div class="role-card-text">
+                                <div class="role-card-name">Inspector</div>
+                                <div class="role-card-desc">Show Cause & Deletion</div>
+                            </div>
+                        </button>
+                        <button type="button" class="role-select-card" data-role="merchant" data-user="merchant" data-pass="Merchant@2026!">
+                            <div class="role-card-icon">🏢</div>
+                            <div class="role-card-text">
+                                <div class="role-card-name">Merchant</div>
+                                <div class="role-card-desc">Brand & Label Audit</div>
+                            </div>
+                        </button>
+                        <button type="button" class="role-select-card" data-role="public" data-user="public" data-pass="Public@2026!">
+                            <div class="role-card-icon">👤</div>
+                            <div class="role-card-text">
+                                <div class="role-card-name">Public</div>
+                                <div class="role-card-desc">Consumer Verification</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="login-fields-section">
+                    <div class="form-group mb-4">
+                        <label class="login-label" for="login-username-input">Username</label>
+                        <div class="input-with-icon-wrap">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </span>
+                            <input type="text" class="form-input" id="login-username-input" required placeholder="Enter username" autocomplete="username">
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="login-label mb-0" for="login-password-input">Password</label>
+                            <button type="button" class="demo-pass-btn" id="login-auto-demo-btn">
+                                ⚡ Fill Demo Password
+                            </button>
+                        </div>
+                        <div class="input-with-icon-wrap">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                                </svg>
+                            </span>
+                            <input type="password" class="form-input" id="login-password-input" required placeholder="Enter password" autocomplete="current-password">
+                            <button type="button" class="password-toggle-btn" id="login-pass-toggle" title="Show/hide password">
+                                👁️
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="login-error-box" id="login-error-box" style="display: none;"></div>
+                </div>
+
+                <div class="login-modal-footer">
+                    <button type="button" class="btn btn-outline" id="login-modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="login-modal-submit-btn">
+                        <span>Sign In</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Scripts -->
-    <script src="js/api.js?v=2"></script>
-    <script src="js/components/header.js"></script>
-    <script src="js/components/imageUploader.js"></script>
-    <script src="js/components/complianceCard.js"></script>
-    <script src="js/components/charts.js"></script>
-    <script src="js/pages/dashboard.js?v=3"></script>
-    <script src="js/pages/scan.js"></script>
-    <script src="js/pages/products.js"></script>
-    <script src="js/pages/report.js?v=2"></script>
-    <script src="js/pages/rules.js"></script>
-    <script src="js/pages/settings.js"></script>
-    <script src="js/app.js"></script>
+    <!-- Scripts with Cache Busting -->
+    <script src="js/api.js?v=7"></script>
+    <script src="js/components/header.js?v=7"></script>
+    <script src="js/components/imageUploader.js?v=7"></script>
+    <script src="js/components/complianceCard.js?v=7"></script>
+    <script src="js/components/charts.js?v=7"></script>
+    <script src="js/pages/dashboard.js?v=7"></script>
+    <script src="js/pages/scan.js?v=7"></script>
+    <script src="js/pages/products.js?v=7"></script>
+    <script src="js/pages/report.js?v=7"></script>
+    <script src="js/pages/rules.js?v=7"></script>
+    <script src="js/pages/settings.js?v=7"></script>
+    <script src="js/app.js?v=7"></script>
 </body>
 </html>

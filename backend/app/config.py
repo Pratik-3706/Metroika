@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite+aiosqlite:///./metroika.db"
 
+    # Passwords (Hex encoded)
+    admin_pass_hex: str = "496e73706563746f72403230323621"
+    merchant_pass_hex: str = "4d65726368616e74403230323621"
+    public_pass_hex: str = "5075626c6963403230323621"
+
     # Paths
     base_dir: Path = Path(__file__).resolve().parent.parent
     upload_dir: Path = Path(__file__).resolve().parent.parent / "uploads"

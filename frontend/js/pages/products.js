@@ -85,6 +85,8 @@ const ProductsPage = {
             return;
         }
 
+        const isInspector = (localStorage.getItem('metroika_role') || 'public') === 'inspector';
+
         el.innerHTML = `
             <table class="data-table">
                 <thead>
@@ -110,7 +112,11 @@ const ProductsPage = {
                             <td>
                                 <div class="flex gap-3">
                                     <button class="btn btn-outline btn-sm" onclick="location.hash='report/${p.id}'">View</button>
-                                    <button class="btn btn-sm" style="color: var(--danger);" onclick="ProductsPage._deleteProduct(${p.id})">Delete</button>
+                                    <button class="btn btn-outline btn-sm" title="Download Official PDF Report" onclick="ProductsPage._downloadPdf(${p.id})">PDF</button>
+                                    <button class="btn btn-outline btn-sm" title="Export CSV" onclick="API.downloadReportCsv(${p.id})">CSV</button>
+                                    ${isInspector ? `
+                                        <button class="btn btn-sm" style="color: var(--danger);" onclick="ProductsPage._deleteProduct(${p.id})">Delete</button>
+                                    ` : ''}
                                 </div>
                             </td>
                         </tr>
@@ -120,7 +126,24 @@ const ProductsPage = {
         `;
     },
 
+    async _downloadPdf(id) {
+        showToast(`Preparing PDF compliance report for product #${id}...`, 'info');
+        try {
+            await API.downloadReport(id);
+            showToast(`PDF report for product #${id} downloaded successfully!`, 'success');
+        } catch (error) {
+            console.error('PDF download error:', error);
+            showToast(`Failed to download PDF: ${error.message}`, 'error');
+        }
+    },
+
     async _deleteProduct(id) {
+        const isInspector = (localStorage.getItem('metroika_role') || 'public') === 'inspector';
+        if (!isInspector) {
+            showToast('Permission Denied: Deletion requires Legal Metrology Inspector role.', 'error');
+            return;
+        }
+
         if (!confirm(`Delete product #${id} and all associated data?`)) return;
         try {
             await API.deleteProduct(id);

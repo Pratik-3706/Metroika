@@ -71,14 +71,26 @@ const ReportPage = {
                         ${hasAnalysis ? 'Re-Analyze' : 'Analyze Now'}
                     </button>
                     ${hasAnalysis ? `
+                        <button class="btn btn-outline btn-sm" id="dl-csv-btn" title="Export as editable CSV format">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            Export CSV
+                        </button>
                         <button class="btn btn-success btn-sm" id="dl-report-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
                                 <polyline points="7 10 12 15 17 10"/>
                                 <line x1="12" y1="15" x2="12" y2="3"/>
                             </svg>
-                            Download PDF Report
+                            Download PDF
                         </button>
+                        ${(localStorage.getItem('metroika_role') || 'public') === 'inspector' ? `
+                            <button class="btn btn-warning btn-sm" id="draft-notice-btn" style="background: #dc2626; color: #fff; border-color: #b91c1c;">
+                                ⚖️ Draft Show Cause Notice
+                            </button>
+                        ` : ''}
                     ` : ''}
                     <a href="#products" class="btn btn-outline btn-sm">← Back</a>
                 </div>
@@ -103,13 +115,11 @@ const ReportPage = {
 
                 <!-- Compliance Score -->
                 <div class="grid-2 mb-6">
-                    <div class="card">
-                        ${ComplianceCard.renderScoreCircle(analysis.compliance_score, product.status)}
-                        <div style="text-align: center; margin-top: 8px;">
-                            <span class="text-sm text-muted">
-                                ${analysis.passed_checks} passed · ${analysis.failed_checks} failed · ${analysis.warning_checks} warnings
-                            </span>
-                        </div>
+                    <div class="card" style="position: relative; overflow: hidden;">
+                        <img src="${product.status === 'compliant' ? 'assets/compliance_seal.png' : 'assets/violation_stamp.png'}" 
+                             alt="Status Stamp" 
+                             style="position: absolute; right: 16px; top: 16px; width: ${product.status === 'compliant' ? '64px' : '96px'}; opacity: 0.85; pointer-events: none;">
+                        ${ComplianceCard.renderScoreCircle(analysis.compliance_score, product.status, analysis.passed_checks, analysis.total_checks)}
                     </div>
                     <div class="card">
                         <div class="card-header">
@@ -119,12 +129,14 @@ const ReportPage = {
                             ${this._renderExtractedField('Product Name', extracted['product_name'])}
                             ${this._renderExtractedField('Manufacturer', extracted['manufacturer_name'])}
                             ${this._renderExtractedField('Net Quantity', extracted['net_quantity'])}
+                            ${this._renderExtractedField('Unit Sale Price (USP)', extracted['unit_sale_price'])}
                             ${this._renderExtractedField('Mfg. Date', extracted['manufacture_date'])}
                             ${this._renderExtractedField('MRP', extracted['mrp'])}
                             ${this._renderExtractedField('Best Before', extracted['expiry_date'])}
                             ${this._renderExtractedField('Batch No.', extracted['batch_number'])}
                             ${this._renderExtractedField('Consumer Care', extracted['consumer_care'])}
                             ${this._renderExtractedField('FSSAI License', extracted['fssai_license'])}
+                            ${this._renderExtractedField('Language', extracted['language'])}
                             ${this._renderExtractedField('Ingredients', extracted['ingredients'])}
                             ${this._renderExtractedField('Allergens', extracted['allergens'])}
                             ${this._renderExtractedField('Country of Origin', extracted['country_of_origin'])}
@@ -173,8 +185,84 @@ const ReportPage = {
                         <polyline points="7 10 12 15 17 10"/>
                         <line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
-                    Download PDF Report
+                    Download PDF
                 `;
+            }
+        });
+
+        document.getElementById('dl-csv-btn')?.addEventListener('click', async () => {
+            const btn = document.getElementById('dl-csv-btn');
+            btn.disabled = true;
+            try {
+                await API.downloadReportCsv(product.id);
+                showToast('Editable CSV report downloaded!', 'success');
+            } catch (error) {
+                showToast(`Failed to export CSV: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('draft-notice-btn')?.addEventListener('click', async () => {
+            const btn = document.getElementById('draft-notice-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Drafting...';
+            try {
+                const notice = await API.getShowCauseNotice(product.id);
+                const content = document.getElementById('notice-modal-content');
+                if (content) {
+                    content.innerHTML = `
+                        <div class="legal-notice-doc">
+                            <h2>Government of India</h2>
+                            <h2>Department of Consumer Affairs · Legal Metrology Division</h2>
+                            <div class="doc-subtitle">Office of the Senior Inspector of Legal Metrology</div>
+                            
+                            <div class="doc-meta">
+                                <div><strong>Notice No:</strong> ${notice.notice_number}</div>
+                                <div><strong>Date:</strong> ${notice.date_of_issue}</div>
+                            </div>
+
+                            <p><strong>To:</strong><br>
+                            ${notice.recipient_name}<br>
+                            <em>(Manufacturer / Packer / Importer of Subject Commodity)</em></p>
+
+                            <p><strong>SUB: STATUTORY SHOW CAUSE NOTICE UNDER SECTION 36 OF THE LEGAL METROLOGY ACT, 2009.</strong></p>
+
+                            <p>WHEREAS, an inspection was conducted under the Legal Metrology (Packaged Commodities) Rules, 2011 on commodity labeled <strong>"${notice.product_name}"</strong> (Product ID: #${notice.product_id}${notice.barcode ? `, Barcode: ${notice.barcode}` : ''}).</p>
+
+                            <p>AND WHEREAS, physical and digital visual analysis established that the package fails to conform to the mandatory declarations prescribed by law, constituting <strong>${notice.total_violations} statutory offence(s)</strong>:</p>
+
+                            <div style="margin: 16px 0;">
+                                ${notice.violations.length > 0 ? notice.violations.map((v, i) => `
+                                    <div class="violation-box">
+                                        <strong>${i+1}. ${v.rule}</strong><br>
+                                        <span><strong>Offence Finding:</strong> ${v.finding}</span><br>
+                                        <span><strong>Statutory Section:</strong> <span style="color:#b91c1c; font-weight:600;">${v.statutory_provision}</span></span><br>
+                                        <span><strong>Statutory Penalty:</strong> ${v.statutory_penalty}</span>
+                                    </div>
+                                `).join('') : '<p class="text-success">No critical violations detected. Commodity meets standard requirements.</p>'}
+                            </div>
+
+                            <p>NOW THEREFORE, in exercise of the powers conferred under Section 15 & Section 36 of the Legal Metrology Act, 2009, you are hereby directed to <strong>SHOW CAUSE within ${notice.compliance_deadline_days} days</strong> from the receipt of this notice why legal prosecution and compounding proceedings should not be initiated against your company and nominated directors under Section 39 of the Act.</p>
+
+                            <p style="font-size: 0.82rem; color: #555;">Note: Failure to reply within the stipulated period shall be deemed that you have no explanation to offer, and ex-parte enforcement action will follow without further notice.</p>
+
+                            <div class="sig-block">
+                                <div>
+                                    <strong>${notice.inspector_name}</strong><br>
+                                    <span>${notice.inspector_designation}</span><br>
+                                    <span>Government Seal / Signature</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('notice-modal').style.display = 'flex';
+                }
+            } catch (error) {
+                showToast(`Notice Generation Failed: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '⚖️ Draft Show Cause Notice';
             }
         });
 
@@ -233,13 +321,24 @@ const ReportPage = {
         if (!paths || paths.length === 0) return '';
 
         // Convert absolute paths to URLs served by the backend
-        const imageHtml = paths.map(p => {
-            // Extract the relative path from "uploads/..." onwards
+        const imageHtml = paths.map((p, idx) => {
             const normalized = p.replace(/\\/g, '/');
             const uploadsIdx = normalized.indexOf('uploads/');
             const relativePath = uploadsIdx >= 0 ? normalized.substring(uploadsIdx) : normalized;
-            const url = `${API.BASE_URL.replace('/api', '')}/${relativePath}`;
-            return `<img src="${url}" alt="OCR Annotated" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;">`;
+            const url = `${API.BASE_URL.replace('/api', '')}/${relativePath}?t=${Date.now()}`;
+            return `
+                <div style="margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-gold);">
+                            📷 View ${idx + 1} — OCR Recognition Overlay (Same Orientation)
+                        </span>
+                        <a href="${url}" target="_blank" style="color: var(--text-muted); font-size: 11px; text-decoration: underline;">
+                            Open Full Resolution ↗
+                        </a>
+                    </div>
+                    <img src="${url}" alt="OCR Annotated" style="max-width: 100%; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border); display: block; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+                </div>
+            `;
         }).join('');
 
         return `

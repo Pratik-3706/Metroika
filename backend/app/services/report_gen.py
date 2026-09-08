@@ -3,6 +3,7 @@ PDF report generation service using ReportLab.
 Generates color-coded compliance reports with product images and rule references.
 """
 
+import html
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -239,14 +240,17 @@ def generate_report(
     check_rows = [check_header]
 
     for i, c in enumerate(checks, 1):
-        status_label = STATUS_LABELS.get(c["status"], c["status"])
+        status_label = STATUS_LABELS.get(c.get("status"), c.get("status", ""))
+        rule_name = html.escape(str(c.get("rule_name") or ""))
+        rule_ref = html.escape(str(c.get("rule_reference") or ""))
+        details = html.escape(str(c.get("details") or ""))
         check_rows.append(
             [
                 str(i),
-                Paragraph(c["rule_name"], table_cell_style),
-                Paragraph(c["rule_reference"], table_cell_style),
+                Paragraph(rule_name, table_cell_style),
+                Paragraph(rule_ref, table_cell_style),
                 status_label,
-                Paragraph(c["details"], table_cell_style),
+                Paragraph(details, table_cell_style),
             ]
         )
 
@@ -304,7 +308,7 @@ def generate_report(
     ]
     ext_rows = []
     for label, value in key_fields:
-        val_str = str(value) if value else "—"
+        val_str = html.escape(str(value)) if value is not None else "—"
         ext_rows.append([label, Paragraph(val_str, ext_val_style)])
 
     ext_table = Table(ext_rows, colWidths=[4 * cm, 13.5 * cm])
@@ -340,13 +344,18 @@ def generate_report(
 
         for ann_path in annotated_image_paths[:6]:
             try:
-                if Path(ann_path).exists():
-                    img = RLImage(ann_path, width=16 * cm, height=11 * cm)
+                p = Path(ann_path)
+                if not p.exists():
+                    fallback = settings.upload_dir / p.name
+                    if fallback.exists():
+                        p = fallback
+                if p.exists():
+                    img = RLImage(str(p), width=16 * cm, height=11 * cm)
                     img.hAlign = "CENTER"
                     elements.append(img)
                     elements.append(
                         Paragraph(
-                            f'<font size="7" color="grey">{Path(ann_path).name}</font>',
+                            f'<font size="7" color="grey">{html.escape(p.name)}</font>',
                             styles["Normal"],
                         )
                     )
@@ -360,13 +369,18 @@ def generate_report(
 
     for img_path in image_paths[:6]:  # Max 6 images
         try:
-            if Path(img_path).exists():
-                img = RLImage(img_path, width=14 * cm, height=10 * cm)
+            p = Path(img_path)
+            if not p.exists():
+                fallback = settings.upload_dir / p.name
+                if fallback.exists():
+                    p = fallback
+            if p.exists():
+                img = RLImage(str(p), width=14 * cm, height=10 * cm)
                 img.hAlign = "CENTER"
                 elements.append(img)
                 elements.append(
                     Paragraph(
-                        f'<font size="7" color="grey">{Path(img_path).name}</font>',
+                        f'<font size="7" color="grey">{html.escape(p.name)}</font>',
                         styles["Normal"],
                     )
                 )
