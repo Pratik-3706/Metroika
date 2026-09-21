@@ -52,11 +52,21 @@ Your task is to review the physical packaging images and perform strict visual v
    - storage_instructions: Storage conditions (e.g. "Store below 30°C")
    - mfg_license: Drug / manufacturing license number (e.g. "51/UA/SC/P-2013")
 4. In "pass_rules", list any rule IDs that are visually present and compliant on the packaging (e.g. "R6_1_A", "R6_1_B", "R6_1_C", "R6_1_D", "R6_1_E", "MRP_FMT", "DATE_FMT", "BB_1", "BATCH_1", "BARCODE", "MFG_LIC", "DRUG_LIC", "COMP_1", "DOSE_1", "WARN_1", "STOR_1", "COO_1").
+5. Label Integrity & Readability Audit:
+   Inspect whether the packaging label is physically broken, torn, obscured, cut off at the margins, or partially missing.
+   - "label_broken_or_cutoff": boolean (true if label is physically damaged, torn, peeled, or cropped/cut off leaving declarations incomplete)
+   - "is_unreadable": boolean (true if image is too blurry, dark, low-res, or damaged to read mandatory legal text)
+   - "quality_issue_details": string or null (explain what is cut off or damaged, e.g. 'Right panel is cropped cutting off MRP and manufacturer address')
+   - "request_reupload": boolean (true if user needs to re-take and re-send a complete, clear photo of the intact label)
 
 Return ONLY a valid JSON object matching this schema:
 {
   "corrected_category": "<food|medicine|cosmetic|electronics|general or null>",
   "pass_rules": ["<rule_id>", ...],
+  "label_broken_or_cutoff": false,
+  "is_unreadable": false,
+  "quality_issue_details": "<description of cutoff/damage/blur or null>",
+  "request_reupload": false,
   "corrected_fields": {
     "product_name": "<exact text on image or null>",
     "net_quantity": "<exact text on image or null>",
@@ -319,11 +329,21 @@ async def evaluate_with_ai(
                     rule["status"] = "pass"
                     rule["details"] = f"Declared: {rule['evidence']} (Verified & corrected by AI Vision Evaluator)"
 
+        # Extract label integrity & readability audit flags
+        label_broken_or_cutoff = bool(parsed.get("label_broken_or_cutoff", False))
+        is_unreadable = bool(parsed.get("is_unreadable", False))
+        quality_issue_details = parsed.get("quality_issue_details")
+        request_reupload = bool(parsed.get("request_reupload", False) or is_unreadable or label_broken_or_cutoff)
+
         return {
             "checks": initial_report,
             "corrected_category": corrected_category,
             "corrected_fields": corrected_fields,
             "pass_rules": pass_rules,
+            "label_broken_or_cutoff": label_broken_or_cutoff,
+            "is_unreadable": is_unreadable,
+            "quality_issue_details": quality_issue_details,
+            "request_reupload": request_reupload,
         }
 
     except Exception as e:
@@ -334,4 +354,9 @@ async def evaluate_with_ai(
             "corrected_category": None,
             "corrected_fields": {},
             "pass_rules": [],
+            "label_broken_or_cutoff": False,
+            "is_unreadable": False,
+            "quality_issue_details": None,
+            "request_reupload": False,
         }
+

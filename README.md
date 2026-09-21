@@ -8,7 +8,9 @@ Metroika is an automated compliance verification platform designed for India's L
 
 ## ⚡ Key Features
 
-- **Multi-Angle Packaging Intake** — Ingest front, back, nutrition table, and side panel imagery with automated EXIF orientation correction and CLAHE contrast enhancement.
+- **Multi-Angle Packaging Intake** — Ingest front, back, nutrition table, and side panel imagery with automated EXIF orientation correction, CLAHE contrast enhancement, and bilateral denoising.
+- **Adaptive De-Blurring & Sharpness Restoration** — Evaluates input image clarity using Laplacian variance. Mildly blurred captures are automatically restored via high-frequency unsharp masking and Lab-channel CLAHE to reveal fine text (expiry, MRP, batch codes).
+- **Physical Label Integrity & Broken Label Detection** — Automated and AI-assisted audits inspect whether physical packaging labels are broken, torn, obscured, or cropped/cut off at the margins. If critical declarations are truncated or unreadable, the system flags the defect and prompts the user to re-capture and re-send a clear, intact label.
 - **Neural OCR Engine (PaddleOCR v3.7)** — PP-OCRv5 Server Detection, PP-LCNet 90°/180°/270° angle classification, and bilingual text recognition (Devanagari Hindi & Latin English) with bounding-box geometry extraction.
 - **Optical Barcode & QR Decoding** — Optical extraction via `pyzbar` and OpenCV for EAN-13, UPC-A, Code128, and QR codes, including GS1-890 Made-in-India country prefix validation.
 - **Deterministic 22-Clause Statutory Rules Engine** — Codified regulatory verification for:
@@ -154,6 +156,8 @@ Metroika automatically seeds the database with three default role-based accounts
 | `R7_FONT` | Rule 7, Table I | Minimum numeral & letter height vs Principal Display Panel area | **Medium** |
 | `R8_PDP` | Rule 8 | Presence of statutory declarations on Principal Display Panel | **Medium** |
 | `BARCODE` | Standard | Optical EAN-13, UPC-A, or QR code detection & GS1-890 India match | **Low** |
+| `LABEL_INTEGRITY` | Rule 6 & Rule 8 | Physical label completeness, cuts, tears, or margin truncation | **Critical** |
+| `LABEL_READABILITY` | Rule 7 & Rule 9 | Visual clarity, de-blurring outcome & legibility re-upload prompt | **High** |
 | `DRUG_LIC` | Drugs & Cosmetics | Drug Manufacturing License Number (`Mfg. Lic. No.`) | **High** |
 | `COMP_1` | Drugs & Cosmetics | Quantitative active formulation & ingredient composition | **High** |
 | `DOSE_1` | Drugs & Cosmetics | Dosage instructions or physician directive | **High** |

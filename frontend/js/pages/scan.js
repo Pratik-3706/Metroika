@@ -477,7 +477,46 @@ const ScanPage = {
 
         const checks = analysis?.checks || [];
 
+        // Quality and re-upload banners
+        let qualityBannerHtml = '';
+        if (result.request_reupload || result.is_unreadable || result.label_broken_or_cutoff) {
+            qualityBannerHtml = `
+                <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(185, 28, 28, 0.06) 100%); border: 1.5px solid rgba(239, 68, 68, 0.35); border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.08);">
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <span style="font-size: 26px; line-height: 1;">⚠️</span>
+                        <div style="flex: 1;">
+                            <h4 style="color: #ef4444; font-size: 14px; font-weight: 700; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.04em;">
+                                ${result.label_broken_or_cutoff ? 'Physical Label Broken or Cut Off' : 'Image Quality Alert / Unreadable Packaging'}
+                            </h4>
+                            <p style="font-size: 12.5px; color: var(--text-primary); margin: 0 0 10px 0; line-height: 1.4;">
+                                ${result.quality_message || 'The packaging image is too degraded, blurred, or truncated for an authoritative legal audit.'}
+                            </p>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-danger btn-sm" onclick="ScanPage.mount(document.getElementById('main-content'))" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                                        <circle cx="12" cy="13" r="4"/>
+                                    </svg>
+                                    Re-take & Send Image Again
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (result.deblur_applied) {
+            qualityBannerHtml = `
+                <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 18px;">✨</span>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        <strong style="color: #10b981;">Automated Restoration Applied:</strong> Mild blurriness was detected and sharpened via unsharp-masking & CLAHE to recover fine print.
+                    </div>
+                </div>
+            `;
+        }
+
         panel.innerHTML = `
+            ${qualityBannerHtml}
             ${skipAi ? `
             <div style="background-color: rgba(255, 193, 7, 0.1); color: #ffb800; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid rgba(255, 193, 7, 0.3);">
                 <strong>⚠️ AI Evaluator Bypassed</strong><br>

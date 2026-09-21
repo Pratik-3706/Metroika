@@ -112,6 +112,164 @@ def get_ocr_engine():
 # Global cache to store generated image paths during extraction
 _ANNOTATED_CACHE = {}
 
+# Global quality evaluation cache per image path
+_QUALITY_CACHE = {}
+
+
+# ---------------------------------------------------------------------------
+# Image Quality Assessment & Adaptive De-blurring / Restoration Engine
+# ---------------------------------------------------------------------------
+def assess_and_enhance_image(image_path: str) -> Tuple[str, Dict]:
+    """
+    Evaluates packaging image quality (blurriness, contrast, resolution).
+    If blurry or low-contrast, applies adaptive de-blurring algorithms:
+    - Unsharp Masking (High-frequency edge boost)
+    - CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    - Bilateral edge-preserving denoising
+
+    Returns (processed_image_path, quality_metrics).
+    """
+    import cv2
+    import numpy as np
+
+    metrics = {
+        "is_blurry": False,
+        "blur_score": 0.0,
+        "is_unreadable": False,
+        "enhanced": False,
+        "message": "Image quality is optimal for compliance analysis.",
+        "resolution": [0, 0],
+    }
+
+    try:
+        img = cv2.imread(image_path)
+        if img is None:
+            metrics["is_unreadable"] = True
+            metrics["message"] = "Unable to read image file. Please re-upload a clear image."
+            _QUALITY_CACHE[image_path] = metrics
+            return image_path, metrics
+
+        h, w = img.shape[:2]
+        metrics["resolution"] = [w, h]
+
+        # Resolution check: Extremely tiny images cannot be reliably parsed
+        if w < 120 or h < 120:
+            metrics["is_unreadable"] = True
+            metrics["message"] = "Image resolution is too low (< 120px) to read fine label text. Please provide a higher resolution photo."
+            _QUALITY_CACHE[image_path] = metrics
+            return image_path, metrics
+
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # Variance of Laplacian (Brenner / Pech blur metric)
+        laplacian_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+        metrics["blur_score"] = round(laplacian_var, 2)
+
+        # Blurriness thresholds:
+        # < 60: distinctly blurry
+        # < 15: severely degraded / unreadable
+        BLUR_THRESHOLD = 75.0
+        UNREADABLE_THRESHOLD = 18.0
+
+        if laplacian_var < BLUR_THRESHOLD:
+            metrics["is_blurry"] = True
+            logger.info(f"Image {Path(image_path).name} detected as blurry (variance={laplacian_var:.1f} < {BLUR_THRESHOLD}). Applying restoration algorithms...")
+
+            # Apply adaptive de-blurring pipeline
+            # 1. Bilateral filter to remove sensor grain while preserving text edges
+            denoised = cv2.bilateralFilter(img, d=5, sigmaColor=50, sigmaSpace=50)
+
+            # 2. Unsharp masking to reconstruct soft edges on text characters
+            gaussian = cv2.GaussianBlur(denoised, (0, 0), sigmaX=2.0)
+            unsharp = cv2.addWeighted(denoised, 1.5, gaussian, -0.5, 0)
+
+            # 3. CLAHE on L-channel (Lab color space) to recover faded ink without color distortion
+            lab = cv2.cvtColor(unsharp, cv2.COLOR_BGR2LAB)
+            l, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=2.2, tileGridSize=(8, 8))
+            l_enhanced = clahe.apply(l)
+            enhanced_lab = cv2.merge((l_enhanced, a, b))
+            enhanced_img = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
+
+            # Re-evaluate sharpness of enhanced image
+            gray_enhanced = cv2.cvtColor(enhanced_img, cv2.COLOR_BGR2GRAY)
+            new_var = float(cv2.Laplacian(gray_enhanced, cv2.CV_64F).var())
+
+            p = Path(image_path)
+            enhanced_path = str(p.parent / f"{p.stem}_enhanced{p.suffix}")
+            cv2.imwrite(enhanced_path, enhanced_img, [cv2.IMWRITE_JPEG_QUALITY, 96])
+
+            metrics["enhanced"] = True
+            metrics["new_blur_score"] = round(new_var, 2)
+            metrics["message"] = f"Adaptive de-blurring applied (sharpness improved from {laplacian_var:.1f} to {new_var:.1f})."
+            logger.info(f"Enhanced image saved to {enhanced_path} (sharpness improved {laplacian_var:.1f} -> {new_var:.1f})")
+
+            # Check if even after enhancement the image remains hopelessly degraded
+            if laplacian_var < UNREADABLE_THRESHOLD and new_var < 35.0:
+                metrics["is_unreadable"] = True
+                metrics["message"] = (
+                    "Packaging photo is severely blurred or out-of-focus. "
+                    "Automated de-blurring was attempted, but fine legal declarations remain unreadable. "
+                    "Please re-capture and send a clear, focused image of the label."
+                )
+
+            _QUALITY_CACHE[image_path] = metrics
+            return enhanced_path, metrics
+
+        metrics["message"] = f"Image sharpness is clean (score: {laplacian_var:.1f})."
+        _QUALITY_CACHE[image_path] = metrics
+        return image_path, metrics
+
+    except Exception as e:
+        logger.warning(f"Image quality assessment skipped for {image_path}: {e}")
+        _QUALITY_CACHE[image_path] = metrics
+        return image_path, metrics
+
+
+def get_image_quality_summary(image_paths: List[str]) -> Dict:
+    """Return an aggregated quality & readability audit for a set of packaging images."""
+    unreadable_images = []
+    blurry_images = []
+    enhanced_count = 0
+    messages = []
+
+    for p in image_paths:
+        q = _QUALITY_CACHE.get(p)
+        if not q:
+            # Evaluate if not cached
+            _, q = assess_and_enhance_image(p)
+
+        fname = Path(p).name
+        if q.get("is_unreadable"):
+            unreadable_images.append(fname)
+            messages.append(f"{fname}: {q.get('message')}")
+        elif q.get("is_blurry"):
+            blurry_images.append(fname)
+            if q.get("enhanced"):
+                enhanced_count += 1
+                messages.append(f"{fname}: Restored via unsharp-masking & CLAHE.")
+
+    has_unreadable = len(unreadable_images) > 0
+    return {
+        "has_unreadable": has_unreadable,
+        "unreadable_images": unreadable_images,
+        "has_blurry": len(blurry_images) > 0,
+        "blurry_images": blurry_images,
+        "enhanced_count": enhanced_count,
+        "request_reupload": has_unreadable,
+        "guidance_message": (
+            f"⚠️ Packaging image(s) [{', '.join(unreadable_images)}] are unreadable or severely out of focus. "
+            "Automated de-blurring algorithms were executed, but crucial statutory declarations remain degraded. "
+            "Please take and send a sharp, steady photo of the label under adequate lighting."
+            if has_unreadable else (
+                f"ℹ️ {enhanced_count} image(s) exhibited mild blur and were automatically restored using unsharp masking and CLAHE."
+                if enhanced_count > 0 else "All uploaded packaging images meet high-clarity standards."
+            )
+        ),
+        "details": messages,
+    }
+
+
 
 # ---------------------------------------------------------------------------
 # Multilingual Text Cleaning & Font Normalization Helpers
@@ -334,9 +492,12 @@ def extract_structured_ocr(image_path: str) -> List[Dict]:
         return []
 
     try:
+        # Pre-process image: Assess blur and apply adaptive de-blurring / CLAHE enhancement if needed
+        proc_image_path, quality_info = assess_and_enhance_image(image_path)
+
         # High resolution prediction: handles small fonts (dates, expiry, USP, batch codes)
         result = engine.predict(
-            input=image_path,
+            input=proc_image_path,
             use_textline_orientation=True,
             use_doc_orientation_classify=True,
         )

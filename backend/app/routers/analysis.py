@@ -35,6 +35,7 @@ from app.services.ocr import (
     extract_raw_text_from_images,
     extract_all_structured,
     generate_all_annotated_images,
+    get_image_quality_summary,
 )
 from app.config import settings
 
@@ -286,17 +287,69 @@ async def analyze_product(
         )
         db.add(check)
 
-    # Update product status
+    # Step 5b: Image Quality & Physical Label Integrity Assessment
+    quality_summary = get_image_quality_summary(image_paths)
+    deblur_applied = quality_summary.get("enhanced_count", 0) > 0
+    is_unreadable = bool(quality_summary.get("has_unreadable", False))
+    quality_message = quality_summary.get("guidance_message")
+
+    # If AI verifier was executed, check if label was flagged as broken/cut off
+    label_broken_or_cutoff = False
+    if ai_used and isinstance(ai_res, dict):
+        if ai_res.get("label_broken_or_cutoff"):
+            label_broken_or_cutoff = True
+        if ai_res.get("is_unreadable"):
+            is_unreadable = True
+        ai_quality_details = ai_res.get("quality_issue_details")
+        if ai_quality_details:
+            quality_message = f"{quality_message} | AI Audit: {ai_quality_details}" if quality_message else ai_quality_details
+
+    # If raw OCR extracted almost zero text from all images (e.g. < 15 chars) and no barcodes, mark as unreadable
+    if len(raw_text.strip()) < 15 and not barcode_results.get("barcode_data"):
+        is_unreadable = True
+        quality_message = (
+            "No legible text or barcodes could be extracted from the uploaded packaging images. "
+            "The image may be blank, extremely blurry, or poorly lit. Please re-upload a clear, focused photo."
+        )
+
+    request_reupload = is_unreadable or label_broken_or_cutoff
+
+    # If label is cut off or unreadable, add a prominent advisory check in compliance checks
+    if label_broken_or_cutoff:
+        checks.append({
+            "rule_id": "LABEL_INTEGRITY",
+            "rule_name": "Packaging Label Integrity & Coverage",
+            "rule_reference": "Rule 6 & Rule 8 (Mandatory Declaration Completeness)",
+            "status": "fail",
+            "details": f"Label appears damaged, torn, or cropped at edges: {quality_message}",
+            "evidence": "Label margins truncated / incomplete packaging panel",
+            "severity": "critical",
+            "statutory_penalty": "Section 36(1) penalty for omitted mandatory declarations",
+        })
+    elif is_unreadable:
+        checks.append({
+            "rule_id": "LABEL_READABILITY",
+            "rule_name": "Packaging Readability & Image Clarity",
+            "rule_reference": "Rule 7 & Rule 9 (Legibility & Prominence)",
+            "status": "warning",
+            "details": quality_message,
+            "evidence": "Image unreadable / de-blurring failed to recover text",
+            "severity": "high",
+            "statutory_penalty": "Please re-upload a clear image for legally definitive verification",
+        })
+
+    # Recalculate score if new checks were appended
+    score_info = calculate_compliance_score(checks)
     product.status = score_info["status"]
     await db.commit()
 
     logger.info(
         f"Analysis complete: score={score_info['score']}%, status={score_info['status']}, "
-        f"ai_used={ai_used}"
+        f"ai_used={ai_used}, deblur_applied={deblur_applied}, reupload={request_reupload}"
     )
 
     return AnalysisResponse(
-        message="Analysis complete",
+        message="Analysis complete" if not request_reupload else "Analysis complete with image clarity warnings",
         analysis_id=analysis.id,
         compliance_score=score_info["score"],
         status=score_info["status"],
@@ -304,6 +357,11 @@ async def analyze_product(
         passed=score_info["passed"],
         failed=score_info["failed"],
         warnings=score_info["warnings"],
+        is_unreadable=is_unreadable,
+        label_broken_or_cutoff=label_broken_or_cutoff,
+        request_reupload=request_reupload,
+        quality_message=quality_message,
+        deblur_applied=deblur_applied,
     )
 
 

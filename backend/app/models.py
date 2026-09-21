@@ -126,3 +126,9 @@ class AnalysisResponse(BaseModel):
     passed: int
     failed: int
     warnings: int
+    is_unreadable: bool = False
+    label_broken_or_cutoff: bool = False
+    request_reupload: bool = False
+    quality_message: Optional[str] = None
+    deblur_applied: bool = False
+
