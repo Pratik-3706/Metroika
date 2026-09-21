@@ -54,3 +54,5 @@ Desktop.ini
 # Tests
 tests/
 backend/tests/
+lables/
+a_test/
