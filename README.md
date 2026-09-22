@@ -5,6 +5,49 @@
 Metroika is an automated compliance verification platform designed for India's Legal Metrology standards and FSSAI packaging norms. The system combines local neural OCR, optical barcode/QR decoding, an expert 22-clause deterministic statutory rules engine, and optional multimodal AI vision verification to generate court-admissible audit dossiers and enforcement dashboards.
 
 ---
+## ❓ Why Metroika?
+
+### The Problem
+
+Checking packaged products for Legal Metrology compliance can involve
+examining multiple declarations on product labels and verifying them
+against different regulatory requirements.
+
+-  Manual inspection of multiple product declarations
+-  Time-consuming verification
+-  Paperwork and fragmented inspection records
+-  Risk of missing non-compliant declarations
+-  Difficult to scale inspection across large product volumes
+
+### Our Approach
+
+**Metroika automates the first level of inspection by combining
+AI Vision, OCR, barcode detection, and a rule-based compliance
+engine.**
+
+**Scan → Extract → Validate → Report**
+
+### 💡 What Makes Metroika Different?
+
+Existing government platforms such as **e-Maap and the Legal Metrology
+portal** provide digital services for Legal Metrology. Metroika focuses
+on a different layer: **AI-assisted product-label inspection and
+automated compliance verification.**
+
+| Traditional / Existing Workflow | Metroika |
+|---|---|
+| Product label examined manually | Product label scanned digitally |
+| Declarations identified manually | AI extracts declarations |
+| Rules checked during inspection | Rule engine performs automated checks |
+| Evidence collected during inspection | Evidence linked to compliance results |
+| Inspection result prepared manually | Structured compliance report generated |
+
+### 🎯 Core Value
+
+> **Metroika turns a product label into a structured compliance
+> report — from scan to verification.**
+
+## Features
 
 ## ⚡ Key Features
 
