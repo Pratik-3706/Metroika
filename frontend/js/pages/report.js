@@ -116,10 +116,16 @@ const ReportPage = {
                 <!-- Compliance Score -->
                 <div class="grid-2 mb-6">
                     <div class="card" style="position: relative; overflow: hidden;">
-                        <img src="${product.status === 'compliant' ? 'assets/compliance_seal.png' : 'assets/violation_stamp.png'}" 
-                             alt="Status Stamp" 
-                             style="position: absolute; right: 16px; top: 16px; width: ${product.status === 'compliant' ? '64px' : '96px'}; opacity: 0.85; pointer-events: none;">
-                        ${ComplianceCard.renderScoreCircle(analysis.compliance_score, product.status, analysis.passed_checks, analysis.total_checks)}
+                        ${(() => {
+                            const isCompliant = (analysis.compliance_score >= 100 && (analysis.failed_checks === 0 || !analysis.failed_checks)) || product.status === 'compliant';
+                            const effectiveStatus = isCompliant ? 'compliant' : product.status;
+                            return `
+                                <img src="${isCompliant ? 'assets/compliance_seal.png' : 'assets/violation_stamp.png'}" 
+                                     alt="Status Stamp" 
+                                     style="position: absolute; right: 16px; top: 16px; width: ${isCompliant ? '64px' : '96px'}; opacity: 0.85; pointer-events: none;">
+                                ${ComplianceCard.renderScoreCircle(analysis.compliance_score, effectiveStatus, analysis.passed_checks, analysis.total_checks)}
+                            `;
+                        })()}
                     </div>
                     <div class="card">
                         <div class="card-header">

@@ -253,8 +253,61 @@ async def analyze_product(
     if not pseudo_extracted_data.get("product_name") or pseudo_extracted_data["product_name"] in (None, "Unnamed Product", "Unknown Product"):
         pseudo_extracted_data["product_name"] = product.name or "N/A"
 
-    # Recalculate score after AI corrections
+    # Step 5b: Image Quality & Physical Label Integrity Assessment
+    quality_summary = get_image_quality_summary(image_paths)
+    deblur_applied = quality_summary.get("enhanced_count", 0) > 0
+    is_unreadable = bool(quality_summary.get("has_unreadable", False))
+    quality_message = quality_summary.get("guidance_message")
+
+    # If AI verifier was executed, check if label was flagged as broken/cut off
+    label_broken_or_cutoff = False
+    if ai_used and isinstance(ai_res, dict):
+        if ai_res.get("label_broken_or_cutoff"):
+            label_broken_or_cutoff = True
+        if ai_res.get("is_unreadable"):
+            is_unreadable = True
+        ai_quality_details = ai_res.get("quality_issue_details")
+        if ai_quality_details:
+            quality_message = f"{quality_message} | AI Audit: {ai_quality_details}" if quality_message else ai_quality_details
+
+    # If raw OCR extracted almost zero text from all images (e.g. < 15 chars) and no barcodes, mark as unreadable
+    if len(raw_text.strip()) < 15 and not barcode_results.get("barcode_data"):
+        is_unreadable = True
+        quality_message = (
+            "No legible text or barcodes could be extracted from the uploaded packaging images. "
+            "The image may be blank, extremely blurry, or poorly lit. Please re-upload a clear, focused photo."
+        )
+
+    request_reupload = is_unreadable or label_broken_or_cutoff
+
+    # If label is cut off or unreadable, add a prominent check in compliance checks
+    if label_broken_or_cutoff:
+        has_failed_declarations = any(c.get("status") == "fail" for c in checks)
+        checks.append({
+            "rule_id": "LABEL_INTEGRITY",
+            "rule_name": "Packaging Label Integrity & Coverage",
+            "rule_reference": "Rule 6 & Rule 8 (Mandatory Declaration Completeness)",
+            "status": "fail" if has_failed_declarations else "warning",
+            "details": f"Label appears damaged, torn, or cropped at edges: {quality_message}",
+            "evidence": "Label margins truncated / incomplete packaging panel",
+            "severity": "critical" if has_failed_declarations else "medium",
+            "statutory_penalty": "Section 36(1) penalty for omitted mandatory declarations" if has_failed_declarations else "Advisory: capture entire packaging flat or full wrap",
+        })
+    elif is_unreadable:
+        checks.append({
+            "rule_id": "LABEL_READABILITY",
+            "rule_name": "Packaging Readability & Image Clarity",
+            "rule_reference": "Rule 7 & Rule 9 (Legibility & Prominence)",
+            "status": "warning",
+            "details": quality_message,
+            "evidence": "Image unreadable / de-blurring failed to recover text",
+            "severity": "high",
+            "statutory_penalty": "Please re-upload a clear image for legally definitive verification",
+        })
+
+    # Final score calculation including all checks
     score_info = calculate_compliance_score(checks)
+    product.status = score_info["status"]
 
     # Store annotated image paths
     annotated_paths_str = json.dumps(annotated_paths) if annotated_paths else None
@@ -287,60 +340,6 @@ async def analyze_product(
         )
         db.add(check)
 
-    # Step 5b: Image Quality & Physical Label Integrity Assessment
-    quality_summary = get_image_quality_summary(image_paths)
-    deblur_applied = quality_summary.get("enhanced_count", 0) > 0
-    is_unreadable = bool(quality_summary.get("has_unreadable", False))
-    quality_message = quality_summary.get("guidance_message")
-
-    # If AI verifier was executed, check if label was flagged as broken/cut off
-    label_broken_or_cutoff = False
-    if ai_used and isinstance(ai_res, dict):
-        if ai_res.get("label_broken_or_cutoff"):
-            label_broken_or_cutoff = True
-        if ai_res.get("is_unreadable"):
-            is_unreadable = True
-        ai_quality_details = ai_res.get("quality_issue_details")
-        if ai_quality_details:
-            quality_message = f"{quality_message} | AI Audit: {ai_quality_details}" if quality_message else ai_quality_details
-
-    # If raw OCR extracted almost zero text from all images (e.g. < 15 chars) and no barcodes, mark as unreadable
-    if len(raw_text.strip()) < 15 and not barcode_results.get("barcode_data"):
-        is_unreadable = True
-        quality_message = (
-            "No legible text or barcodes could be extracted from the uploaded packaging images. "
-            "The image may be blank, extremely blurry, or poorly lit. Please re-upload a clear, focused photo."
-        )
-
-    request_reupload = is_unreadable or label_broken_or_cutoff
-
-    # If label is cut off or unreadable, add a prominent advisory check in compliance checks
-    if label_broken_or_cutoff:
-        checks.append({
-            "rule_id": "LABEL_INTEGRITY",
-            "rule_name": "Packaging Label Integrity & Coverage",
-            "rule_reference": "Rule 6 & Rule 8 (Mandatory Declaration Completeness)",
-            "status": "fail",
-            "details": f"Label appears damaged, torn, or cropped at edges: {quality_message}",
-            "evidence": "Label margins truncated / incomplete packaging panel",
-            "severity": "critical",
-            "statutory_penalty": "Section 36(1) penalty for omitted mandatory declarations",
-        })
-    elif is_unreadable:
-        checks.append({
-            "rule_id": "LABEL_READABILITY",
-            "rule_name": "Packaging Readability & Image Clarity",
-            "rule_reference": "Rule 7 & Rule 9 (Legibility & Prominence)",
-            "status": "warning",
-            "details": quality_message,
-            "evidence": "Image unreadable / de-blurring failed to recover text",
-            "severity": "high",
-            "statutory_penalty": "Please re-upload a clear image for legally definitive verification",
-        })
-
-    # Recalculate score if new checks were appended
-    score_info = calculate_compliance_score(checks)
-    product.status = score_info["status"]
     await db.commit()
 
     logger.info(

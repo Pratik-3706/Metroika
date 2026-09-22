@@ -41,6 +41,12 @@ const ComplianceCard = {
     renderScoreCircle(score, status, passedCount = null, totalCount = null) {
         const roundedScore = Math.round(score || 0);
         const nonCompliantPct = Math.max(0, 100 - roundedScore);
+
+        // If score is 100% and 0 violations, it is statutorily compliant (avoid displaying red non-compliant)
+        let effectiveStatus = status;
+        if (roundedScore >= 100 && (passedCount === null || totalCount === null || Number(passedCount) >= Number(totalCount))) {
+            effectiveStatus = 'compliant';
+        }
         
         // Gauge stroke circumference (2 * PI * 64 ≈ 402)
         const circumference = 402;
@@ -51,7 +57,7 @@ const ComplianceCard = {
                 <div class="gauge-wrap">
                     <svg class="score-gauge-svg" viewBox="0 0 160 160">
                         <circle cx="80" cy="80" r="64" class="gauge-track"/>
-                        <circle cx="80" cy="80" r="64" class="gauge-fill ${status}" 
+                        <circle cx="80" cy="80" r="64" class="gauge-fill ${effectiveStatus}" 
                                 stroke-dasharray="${circumference}" 
                                 stroke-dashoffset="${offset}"/>
                     </svg>
@@ -62,7 +68,7 @@ const ComplianceCard = {
                 </div>
                 
                 <div class="score-audit-verdict">
-                    ${status === 'compliant' ? `
+                    ${effectiveStatus === 'compliant' ? `
                         <div class="verdict-pill compliant">
                             <span class="verdict-dot"></span>
                             <span>STATUTORILY COMPLIANT · APPROVED</span>
@@ -74,7 +80,7 @@ const ComplianceCard = {
                             </div>
                             <p class="verdict-note">All mandatory declarations under Legal Metrology Rules, 2011 are present and fully compliant.</p>
                         </div>
-                    ` : status === 'non_compliant' ? `
+                    ` : effectiveStatus === 'non_compliant' ? `
                         <div class="verdict-pill non_compliant">
                             <span class="verdict-dot"></span>
                             <span>NON-COMPLIANT · DEFECTS DETECTED</span>
